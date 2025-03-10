@@ -4,18 +4,33 @@ const router = express.Router();
 const fs = require('fs');
 const path = require('path');
 
-// 获取产品列表
+// 获取产品列表 - 支持分页
 router.get('/', (req, res) => {
     try {
+        // 获取分页参数，默认页码为1，每页10条
+        const page = parseInt(req.query.page) || 1;
+        const pageSize = parseInt(req.query.pageSize) || 10;
+
+        // 计算起始索引
+        const startIndex = (page - 1) * pageSize;
+
         // 从JSON文件读取数据
         const filePath = path.join(__dirname, '..', 'data', 'stocks.json');
         const stockData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
-        // 随机选择10条记录
-        const shuffled = [...stockData].sort(() => 0.5 - Math.random());
-        const selectedStocks = shuffled.slice(0, 10);
+        // 分页获取数据
+        const paginatedStocks = stockData.slice(startIndex, startIndex + pageSize);
 
-        res.json(selectedStocks);
+        // 返回分页数据和元信息
+        res.json({
+            stocks: paginatedStocks,
+            pagination: {
+                total: stockData.length,
+                page: page,
+                pageSize: pageSize,
+                totalPages: Math.ceil(stockData.length / pageSize)
+            }
+        });
     } catch (error) {
         console.error('Error reading stock data:', error);
         res.status(500).json({error: 'Failed to retrieve stock data'});
