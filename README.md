@@ -35,11 +35,8 @@ Node.js + Express 实现简易测试api
    ```bash
    # 使用标准版本
    node app.js
-   
-   # 或使用快速版本
-   node app-quick.js
    ```
-   服务器默认将在 http://localhost:3000 启动
+   服务器默认将在 http://localhost:5000 启动
 
 ## API 文档
 
@@ -71,7 +68,6 @@ dummy/
   │   ├── users.js         # 用户管理路由
   │   └── products.js      # 产品管理路由
   ├── app.js               # 主应用入口
-  ├── app-quick.js         # 快速版本入口
   ├── package.json         # 项目配置文件
   ├── package-lock.json    # 依赖版本锁定文件
   └── README.md           # 项目说明文档
@@ -81,7 +77,7 @@ dummy/
 创建 `.env` 文件在项目根目录，包含以下配置：
 ```
 # 服务器运行端口
-PORT=3000
+PORT=5000
 
 # 运行环境（development/production）
 NODE_ENV=development
