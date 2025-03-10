@@ -1,0 +1,902 @@
+[
+  {
+    "id": 1,
+    "code": "BABA",
+    "name": "阿里巴巴",
+    "prediction": -0.4,
+    "price": 136.38,
+    "publishTime": "2025-03-05T06:41:28.955Z",
+    "trendChart": "https://example.com/charts/baba.png"
+  },
+  {
+    "id": 2,
+    "code": "600519",
+    "name": "贵州茅台",
+    "prediction": 0.16,
+    "price": 198.53,
+    "publishTime": "2025-03-07T05:41:27.956Z",
+    "trendChart": "https://example.com/charts/600519.png"
+  },
+  {
+    "id": 3,
+    "code": "000858",
+    "name": "五粮液",
+    "prediction": -0.14,
+    "price": 115.65,
+    "publishTime": "2025-03-05T06:19:59.956Z",
+    "trendChart": "https://example.com/charts/000858.png"
+  },
+  {
+    "id": 4,
+    "code": "601318",
+    "name": "中国平安",
+    "prediction": 0.82,
+    "price": 188.85,
+    "publishTime": "2025-03-07T05:46:56.956Z",
+    "trendChart": "https://example.com/charts/601318.png"
+  },
+  {
+    "id": 5,
+    "code": "600036",
+    "name": "招商银行",
+    "prediction": 0.93,
+    "price": 72.8,
+    "publishTime": "2025-03-10T02:27:15.956Z",
+    "trendChart": "https://example.com/charts/600036.png"
+  },
+  {
+    "id": 6,
+    "code": "000333",
+    "name": "美的集团",
+    "prediction": -0.76,
+    "price": 65.61,
+    "publishTime": "2025-03-09T07:29:33.956Z",
+    "trendChart": "https://example.com/charts/000333.png"
+  },
+  {
+    "id": 7,
+    "code": "600276",
+    "name": "恒瑞医药",
+    "prediction": 0.15,
+    "price": 87.61,
+    "publishTime": "2025-03-09T08:02:16.956Z",
+    "trendChart": "https://example.com/charts/600276.png"
+  },
+  {
+    "id": 8,
+    "code": "601888",
+    "name": "中国中免",
+    "prediction": 0.06,
+    "price": 187.08,
+    "publishTime": "2025-03-05T01:18:07.956Z",
+    "trendChart": "https://example.com/charts/601888.png"
+  },
+  {
+    "id": 9,
+    "code": "000651",
+    "name": "格力电器",
+    "prediction": -0.28,
+    "price": 165.03,
+    "publishTime": "2025-03-06T07:47:45.956Z",
+    "trendChart": "https://example.com/charts/000651.png"
+  },
+  {
+    "id": 10,
+    "code": "601166",
+    "name": "兴业银行",
+    "prediction": 0.48,
+    "price": 133.75,
+    "publishTime": "2025-03-05T03:11:12.956Z",
+    "trendChart": "https://example.com/charts/601166.png"
+  },
+  {
+    "id": 11,
+    "code": "TCEHY",
+    "name": "腾讯控股",
+    "prediction": -0.9,
+    "price": 52.88,
+    "publishTime": "2025-03-05T03:44:48.956Z",
+    "trendChart": "https://example.com/charts/tcehy.png"
+  },
+  {
+    "id": 12,
+    "code": "601398",
+    "name": "工商银行",
+    "prediction": -0.95,
+    "price": 142.83,
+    "publishTime": "2025-03-09T07:47:03.956Z",
+    "trendChart": "https://example.com/charts/601398.png"
+  },
+  {
+    "id": 13,
+    "code": "600887",
+    "name": "伊利股份",
+    "prediction": 0.07,
+    "price": 132.45,
+    "publishTime": "2025-03-06T04:12:04.956Z",
+    "trendChart": "https://example.com/charts/600887.png"
+  },
+  {
+    "id": 14,
+    "code": "BIDU",
+    "name": "百度",
+    "prediction": 0.32,
+    "price": 178.11,
+    "publishTime": "2025-03-10T03:34:01.956Z",
+    "trendChart": "https://example.com/charts/bidu.png"
+  },
+  {
+    "id": 15,
+    "code": "PDD",
+    "name": "拼多多",
+    "prediction": 0.79,
+    "price": 163.64,
+    "publishTime": "2025-03-07T04:45:53.956Z",
+    "trendChart": "https://example.com/charts/pdd.png"
+  },
+  {
+    "id": 16,
+    "code": "002594",
+    "name": "比亚迪",
+    "prediction": -0.23,
+    "price": 184.19,
+    "publishTime": "2025-03-08T03:10:19.956Z",
+    "trendChart": "https://example.com/charts/002594.png"
+  },
+  {
+    "id": 17,
+    "code": "600030",
+    "name": "中信证券",
+    "prediction": 0.08,
+    "price": 167.15,
+    "publishTime": "2025-03-04T05:08:52.956Z",
+    "trendChart": "https://example.com/charts/600030.png"
+  },
+  {
+    "id": 18,
+    "code": "601288",
+    "name": "农业银行",
+    "prediction": -0.73,
+    "price": 164.47,
+    "publishTime": "2025-03-09T04:11:22.956Z",
+    "trendChart": "https://example.com/charts/601288.png"
+  },
+  {
+    "id": 19,
+    "code": "000568",
+    "name": "泸州老窖",
+    "prediction": 0.73,
+    "price": 132.72,
+    "publishTime": "2025-03-10T05:53:03.956Z",
+    "trendChart": "https://example.com/charts/000568.png"
+  },
+  {
+    "id": 20,
+    "code": "JD",
+    "name": "京东",
+    "prediction": -0.36,
+    "price": 108.78,
+    "publishTime": "2025-03-05T07:23:48.956Z",
+    "trendChart": "https://example.com/charts/jd.png"
+  },
+  {
+    "id": 21,
+    "code": "601899",
+    "name": "紫金矿业",
+    "prediction": -0.77,
+    "price": 181.58,
+    "publishTime": "2025-03-07T05:43:02.956Z",
+    "trendChart": "https://example.com/charts/601899.png"
+  },
+  {
+    "id": 22,
+    "code": "603259",
+    "name": "药明康德",
+    "prediction": 0.18,
+    "price": 144.81,
+    "publishTime": "2025-03-04T08:41:30.956Z",
+    "trendChart": "https://example.com/charts/603259.png"
+  },
+  {
+    "id": 23,
+    "code": "002475",
+    "name": "立讯精密",
+    "prediction": -0.85,
+    "price": 92.05,
+    "publishTime": "2025-03-06T05:30:50.956Z",
+    "trendChart": "https://example.com/charts/002475.png"
+  },
+  {
+    "id": 24,
+    "code": "600009",
+    "name": "上海机场",
+    "prediction": 0.14,
+    "price": 139.69,
+    "publishTime": "2025-03-10T01:46:36.956Z",
+    "trendChart": "https://example.com/charts/600009.png"
+  },
+  {
+    "id": 25,
+    "code": "000001",
+    "name": "平安银行",
+    "prediction": -0.46,
+    "price": 98.25,
+    "publishTime": "2025-03-05T07:37:06.956Z",
+    "trendChart": "https://example.com/charts/000001.png"
+  },
+  {
+    "id": 26,
+    "code": "NIO",
+    "name": "蔚来汽车",
+    "prediction": 0.6,
+    "price": 160.72,
+    "publishTime": "2025-03-06T03:01:37.956Z",
+    "trendChart": "https://example.com/charts/nio.png"
+  },
+  {
+    "id": 27,
+    "code": "601857",
+    "name": "中国石油",
+    "prediction": -0.33,
+    "price": 139.12,
+    "publishTime": "2025-03-04T05:03:24.956Z",
+    "trendChart": "https://example.com/charts/601857.png"
+  },
+  {
+    "id": 28,
+    "code": "600309",
+    "name": "万华化学",
+    "prediction": 0.91,
+    "price": 198.94,
+    "publishTime": "2025-03-08T06:03:25.956Z",
+    "trendChart": "https://example.com/charts/600309.png"
+  },
+  {
+    "id": 29,
+    "code": "NTES",
+    "name": "网易",
+    "prediction": 0.28,
+    "price": 160.46,
+    "publishTime": "2025-03-06T01:06:12.956Z",
+    "trendChart": "https://example.com/charts/ntes.png"
+  },
+  {
+    "id": 30,
+    "code": "601988",
+    "name": "中国银行",
+    "prediction": 0.78,
+    "price": 137.05,
+    "publishTime": "2025-03-05T08:04:21.956Z",
+    "trendChart": "https://example.com/charts/601988.png"
+  },
+  {
+    "id": 31,
+    "code": "600585",
+    "name": "海螺水泥",
+    "prediction": 1,
+    "price": 100.69,
+    "publishTime": "2025-03-05T03:39:36.956Z",
+    "trendChart": "https://example.com/charts/600585.png"
+  },
+  {
+    "id": 32,
+    "code": "601238",
+    "name": "广汽集团",
+    "prediction": -0.5,
+    "price": 101.21,
+    "publishTime": "2025-03-07T03:05:29.956Z",
+    "trendChart": "https://example.com/charts/601238.png"
+  },
+  {
+    "id": 33,
+    "code": "601088",
+    "name": "中国神华",
+    "prediction": 0.66,
+    "price": 192.59,
+    "publishTime": "2025-03-04T08:01:28.956Z",
+    "trendChart": "https://example.com/charts/601088.png"
+  },
+  {
+    "id": 34,
+    "code": "600104",
+    "name": "上汽集团",
+    "prediction": -0.45,
+    "price": 140.64,
+    "publishTime": "2025-03-07T02:38:01.956Z",
+    "trendChart": "https://example.com/charts/600104.png"
+  },
+  {
+    "id": 35,
+    "code": "600048",
+    "name": "保利发展",
+    "prediction": 0.25,
+    "price": 185.84,
+    "publishTime": "2025-03-04T04:34:53.956Z",
+    "trendChart": "https://example.com/charts/600048.png"
+  },
+  {
+    "id": 36,
+    "code": "601668",
+    "name": "中国建筑",
+    "prediction": 0.75,
+    "price": 89,
+    "publishTime": "2025-03-06T06:02:34.956Z",
+    "trendChart": "https://example.com/charts/601668.png"
+  },
+  {
+    "id": 37,
+    "code": "601628",
+    "name": "中国人寿",
+    "prediction": 0.8,
+    "price": 60.45,
+    "publishTime": "2025-03-08T07:13:43.956Z",
+    "trendChart": "https://example.com/charts/601628.png"
+  },
+  {
+    "id": 38,
+    "code": "601601",
+    "name": "中国太保",
+    "prediction": 0.22,
+    "price": 136.25,
+    "publishTime": "2025-03-05T07:42:15.956Z",
+    "trendChart": "https://example.com/charts/601601.png"
+  },
+  {
+    "id": 39,
+    "code": "601818",
+    "name": "光大银行",
+    "prediction": -0.73,
+    "price": 102.2,
+    "publishTime": "2025-03-07T05:25:52.956Z",
+    "trendChart": "https://example.com/charts/601818.png"
+  },
+  {
+    "id": 40,
+    "code": "600028",
+    "name": "中国石化",
+    "prediction": 0.81,
+    "price": 186.5,
+    "publishTime": "2025-03-08T06:14:13.956Z",
+    "trendChart": "https://example.com/charts/600028.png"
+  },
+  {
+    "id": 41,
+    "code": "600809",
+    "name": "山西汾酒",
+    "prediction": 0.7,
+    "price": 125.92,
+    "publishTime": "2025-03-07T03:23:08.956Z",
+    "trendChart": "https://example.com/charts/600809.png"
+  },
+  {
+    "id": 42,
+    "code": "600690",
+    "name": "海尔智家",
+    "prediction": -0.92,
+    "price": 188.58,
+    "publishTime": "2025-03-07T05:33:12.956Z",
+    "trendChart": "https://example.com/charts/600690.png"
+  },
+  {
+    "id": 43,
+    "code": "601336",
+    "name": "新华保险",
+    "prediction": -0.55,
+    "price": 96.96,
+    "publishTime": "2025-03-05T05:33:12.956Z",
+    "trendChart": "https://example.com/charts/601336.png"
+  },
+  {
+    "id": 44,
+    "code": "601328",
+    "name": "交通银行",
+    "prediction": 0.9,
+    "price": 171.44,
+    "publishTime": "2025-03-05T03:24:36.956Z",
+    "trendChart": "https://example.com/charts/601328.png"
+  },
+  {
+    "id": 45,
+    "code": "600031",
+    "name": "三一重工",
+    "prediction": 0.06,
+    "price": 183.89,
+    "publishTime": "2025-03-10T01:06:07.956Z",
+    "trendChart": "https://example.com/charts/600031.png"
+  },
+  {
+    "id": 46,
+    "code": "002714",
+    "name": "牧原股份",
+    "prediction": -0.36,
+    "price": 110.08,
+    "publishTime": "2025-03-08T02:22:13.956Z",
+    "trendChart": "https://example.com/charts/002714.png"
+  },
+  {
+    "id": 47,
+    "code": "002352",
+    "name": "顺丰控股",
+    "prediction": -0.33,
+    "price": 144.51,
+    "publishTime": "2025-03-05T07:48:58.956Z",
+    "trendChart": "https://example.com/charts/002352.png"
+  },
+  {
+    "id": 48,
+    "code": "603799",
+    "name": "华友钴业",
+    "prediction": -0.55,
+    "price": 93.11,
+    "publishTime": "2025-03-08T04:22:30.956Z",
+    "trendChart": "https://example.com/charts/603799.png"
+  },
+  {
+    "id": 49,
+    "code": "600438",
+    "name": "通威股份",
+    "prediction": -0.73,
+    "price": 195.98,
+    "publishTime": "2025-03-09T07:18:04.956Z",
+    "trendChart": "https://example.com/charts/600438.png"
+  },
+  {
+    "id": 50,
+    "code": "603501",
+    "name": "韦尔股份",
+    "prediction": -0.64,
+    "price": 93.13,
+    "publishTime": "2025-03-08T08:18:22.956Z",
+    "trendChart": "https://example.com/charts/603501.png"
+  },
+  {
+    "id": 51,
+    "code": "XPEV",
+    "name": "小鹏汽车",
+    "prediction": -0.61,
+    "price": 108.91,
+    "publishTime": "2025-03-10T02:13:57.956Z",
+    "trendChart": "https://example.com/charts/xpev.png"
+  },
+  {
+    "id": 52,
+    "code": "LI",
+    "name": "理想汽车",
+    "prediction": 0.21,
+    "price": 172.89,
+    "publishTime": "2025-03-08T02:02:43.956Z",
+    "trendChart": "https://example.com/charts/li.png"
+  },
+  {
+    "id": 53,
+    "code": "BILI",
+    "name": "哔哩哔哩",
+    "prediction": -0.1,
+    "price": 123.53,
+    "publishTime": "2025-03-06T05:30:43.956Z",
+    "trendChart": "https://example.com/charts/bili.png"
+  },
+  {
+    "id": 54,
+    "code": "TME",
+    "name": "腾讯音乐",
+    "prediction": 0.83,
+    "price": 50.56,
+    "publishTime": "2025-03-09T02:33:19.956Z",
+    "trendChart": "https://example.com/charts/tme.png"
+  },
+  {
+    "id": 55,
+    "code": "YUMC",
+    "name": "百胜中国",
+    "prediction": 0.69,
+    "price": 165.48,
+    "publishTime": "2025-03-05T08:27:11.956Z",
+    "trendChart": "https://example.com/charts/yumc.png"
+  },
+  {
+    "id": 56,
+    "code": "000725",
+    "name": "京东方A",
+    "prediction": -0.5,
+    "price": 174.68,
+    "publishTime": "2025-03-06T08:24:28.956Z",
+    "trendChart": "https://example.com/charts/000725.png"
+  },
+  {
+    "id": 57,
+    "code": "002415",
+    "name": "海康威视",
+    "prediction": -0.96,
+    "price": 125.68,
+    "publishTime": "2025-03-07T04:56:55.956Z",
+    "trendChart": "https://example.com/charts/002415.png"
+  },
+  {
+    "id": 58,
+    "code": "601919",
+    "name": "中远海控",
+    "prediction": 0.21,
+    "price": 182.07,
+    "publishTime": "2025-03-06T07:04:43.956Z",
+    "trendChart": "https://example.com/charts/601919.png"
+  },
+  {
+    "id": 59,
+    "code": "600050",
+    "name": "中国联通",
+    "prediction": 0.77,
+    "price": 56.98,
+    "publishTime": "2025-03-07T05:04:12.956Z",
+    "trendChart": "https://example.com/charts/600050.png"
+  },
+  {
+    "id": 60,
+    "code": "600019",
+    "name": "宝钢股份",
+    "prediction": 0.09,
+    "price": 108.87,
+    "publishTime": "2025-03-06T08:08:09.956Z",
+    "trendChart": "https://example.com/charts/600019.png"
+  },
+  {
+    "id": 61,
+    "code": "600029",
+    "name": "南方航空",
+    "prediction": -0.42,
+    "price": 152.99,
+    "publishTime": "2025-03-08T03:40:26.956Z",
+    "trendChart": "https://example.com/charts/600029.png"
+  },
+  {
+    "id": 62,
+    "code": "600406",
+    "name": "国电南瑞",
+    "prediction": 0.41,
+    "price": 107.97,
+    "publishTime": "2025-03-08T07:47:49.956Z",
+    "trendChart": "https://example.com/charts/600406.png"
+  },
+  {
+    "id": 63,
+    "code": "601985",
+    "name": "中国核电",
+    "prediction": 0.92,
+    "price": 165.26,
+    "publishTime": "2025-03-05T08:35:39.956Z",
+    "trendChart": "https://example.com/charts/601985.png"
+  },
+  {
+    "id": 64,
+    "code": "601766",
+    "name": "中国中车",
+    "prediction": -0.3,
+    "price": 151.36,
+    "publishTime": "2025-03-04T02:22:56.956Z",
+    "trendChart": "https://example.com/charts/601766.png"
+  },
+  {
+    "id": 65,
+    "code": "600547",
+    "name": "山东黄金",
+    "prediction": 0.17,
+    "price": 57.44,
+    "publishTime": "2025-03-08T07:19:11.956Z",
+    "trendChart": "https://example.com/charts/600547.png"
+  },
+  {
+    "id": 66,
+    "code": "600660",
+    "name": "福耀玻璃",
+    "prediction": -0.38,
+    "price": 148.53,
+    "publishTime": "2025-03-06T04:53:05.956Z",
+    "trendChart": "https://example.com/charts/600660.png"
+  },
+  {
+    "id": 67,
+    "code": "601012",
+    "name": "隆基绿能",
+    "prediction": 0.99,
+    "price": 95.52,
+    "publishTime": "2025-03-05T06:48:49.956Z",
+    "trendChart": "https://example.com/charts/601012.png"
+  },
+  {
+    "id": 68,
+    "code": "600745",
+    "name": "闻泰科技",
+    "prediction": -0.06,
+    "price": 155.05,
+    "publishTime": "2025-03-07T03:22:48.956Z",
+    "trendChart": "https://example.com/charts/600745.png"
+  },
+  {
+    "id": 69,
+    "code": "600989",
+    "name": "宝丰能源",
+    "prediction": -0.63,
+    "price": 71.7,
+    "publishTime": "2025-03-04T02:36:22.956Z",
+    "trendChart": "https://example.com/charts/600989.png"
+  },
+  {
+    "id": 70,
+    "code": "601633",
+    "name": "长城汽车",
+    "prediction": -0.05,
+    "price": 172.92,
+    "publishTime": "2025-03-08T07:37:06.956Z",
+    "trendChart": "https://example.com/charts/601633.png"
+  },
+  {
+    "id": 71,
+    "code": "601229",
+    "name": "上海银行",
+    "prediction": -0.14,
+    "price": 120.97,
+    "publishTime": "2025-03-07T07:26:30.956Z",
+    "trendChart": "https://example.com/charts/601229.png"
+  },
+  {
+    "id": 72,
+    "code": "002271",
+    "name": "东方雨虹",
+    "prediction": -0.06,
+    "price": 86.37,
+    "publishTime": "2025-03-08T06:01:18.956Z",
+    "trendChart": "https://example.com/charts/002271.png"
+  },
+  {
+    "id": 73,
+    "code": "603986",
+    "name": "兆易创新",
+    "prediction": 0.7,
+    "price": 177.97,
+    "publishTime": "2025-03-06T02:57:19.956Z",
+    "trendChart": "https://example.com/charts/603986.png"
+  },
+  {
+    "id": 74,
+    "code": "601117",
+    "name": "中国化学",
+    "prediction": 0.77,
+    "price": 136.41,
+    "publishTime": "2025-03-08T08:56:20.956Z",
+    "trendChart": "https://example.com/charts/601117.png"
+  },
+  {
+    "id": 75,
+    "code": "002142",
+    "name": "宁波银行",
+    "prediction": -0.74,
+    "price": 161.7,
+    "publishTime": "2025-03-06T03:39:42.956Z",
+    "trendChart": "https://example.com/charts/002142.png"
+  },
+  {
+    "id": 76,
+    "code": "600754",
+    "name": "锦江酒店",
+    "prediction": -0.93,
+    "price": 101.65,
+    "publishTime": "2025-03-08T08:14:03.956Z",
+    "trendChart": "https://example.com/charts/600754.png"
+  },
+  {
+    "id": 77,
+    "code": "601111",
+    "name": "中国国航",
+    "prediction": -0.06,
+    "price": 60.98,
+    "publishTime": "2025-03-06T08:27:52.956Z",
+    "trendChart": "https://example.com/charts/601111.png"
+  },
+  {
+    "id": 78,
+    "code": "600600",
+    "name": "青岛啤酒",
+    "prediction": -0.64,
+    "price": 176.04,
+    "publishTime": "2025-03-08T04:38:46.956Z",
+    "trendChart": "https://example.com/charts/600600.png"
+  },
+  {
+    "id": 79,
+    "code": "600487",
+    "name": "亨通光电",
+    "prediction": 0.69,
+    "price": 137.08,
+    "publishTime": "2025-03-08T01:02:59.956Z",
+    "trendChart": "https://example.com/charts/600487.png"
+  },
+  {
+    "id": 80,
+    "code": "000776",
+    "name": "广发证券",
+    "prediction": 0.14,
+    "price": 71.77,
+    "publishTime": "2025-03-06T04:47:47.956Z",
+    "trendChart": "https://example.com/charts/000776.png"
+  },
+  {
+    "id": 81,
+    "code": "600999",
+    "name": "招商证券",
+    "prediction": 0.15,
+    "price": 106.57,
+    "publishTime": "2025-03-07T04:27:45.956Z",
+    "trendChart": "https://example.com/charts/600999.png"
+  },
+  {
+    "id": 82,
+    "code": "600196",
+    "name": "复星医药",
+    "prediction": 0.46,
+    "price": 69.19,
+    "publishTime": "2025-03-09T02:02:45.956Z",
+    "trendChart": "https://example.com/charts/600196.png"
+  },
+  {
+    "id": 83,
+    "code": "600011",
+    "name": "华能国际",
+    "prediction": 0.88,
+    "price": 152.63,
+    "publishTime": "2025-03-07T02:59:51.956Z",
+    "trendChart": "https://example.com/charts/600011.png"
+  },
+  {
+    "id": 84,
+    "code": "601688",
+    "name": "华泰证券",
+    "prediction": -0.34,
+    "price": 115.46,
+    "publishTime": "2025-03-05T01:18:48.956Z",
+    "trendChart": "https://example.com/charts/601688.png"
+  },
+  {
+    "id": 85,
+    "code": "002230",
+    "name": "科大讯飞",
+    "prediction": -0.56,
+    "price": 67.55,
+    "publishTime": "2025-03-04T02:13:14.956Z",
+    "trendChart": "https://example.com/charts/002230.png"
+  },
+  {
+    "id": 86,
+    "code": "600900",
+    "name": "长江电力",
+    "prediction": -0.25,
+    "price": 152.86,
+    "publishTime": "2025-03-04T03:00:38.956Z",
+    "trendChart": "https://example.com/charts/600900.png"
+  },
+  {
+    "id": 87,
+    "code": "000063",
+    "name": "中兴通讯",
+    "prediction": -0.85,
+    "price": 102.7,
+    "publishTime": "2025-03-08T05:36:34.956Z",
+    "trendChart": "https://example.com/charts/000063.png"
+  },
+  {
+    "id": 88,
+    "code": "000895",
+    "name": "双汇发展",
+    "prediction": 0.99,
+    "price": 198.54,
+    "publishTime": "2025-03-06T06:57:29.956Z",
+    "trendChart": "https://example.com/charts/000895.png"
+  },
+  {
+    "id": 89,
+    "code": "600115",
+    "name": "东方航空",
+    "prediction": 0.13,
+    "price": 195.97,
+    "publishTime": "2025-03-05T03:01:17.956Z",
+    "trendChart": "https://example.com/charts/600115.png"
+  },
+  {
+    "id": 90,
+    "code": "600893",
+    "name": "航发动力",
+    "prediction": 0.32,
+    "price": 114.9,
+    "publishTime": "2025-03-08T01:14:36.956Z",
+    "trendChart": "https://example.com/charts/600893.png"
+  },
+  {
+    "id": 91,
+    "code": "601211",
+    "name": "国泰君安",
+    "prediction": -0.22,
+    "price": 98.27,
+    "publishTime": "2025-03-09T05:22:34.956Z",
+    "trendChart": "https://example.com/charts/601211.png"
+  },
+  {
+    "id": 92,
+    "code": "601066",
+    "name": "中信建投",
+    "prediction": 0.25,
+    "price": 55.07,
+    "publishTime": "2025-03-08T02:23:56.956Z",
+    "trendChart": "https://example.com/charts/601066.png"
+  },
+  {
+    "id": 93,
+    "code": "600837",
+    "name": "海通证券",
+    "prediction": -0.57,
+    "price": 178.46,
+    "publishTime": "2025-03-08T02:22:45.956Z",
+    "trendChart": "https://example.com/charts/600837.png"
+  },
+  {
+    "id": 94,
+    "code": "603288",
+    "name": "海天味业",
+    "prediction": 0.83,
+    "price": 193.51,
+    "publishTime": "2025-03-07T04:38:33.956Z",
+    "trendChart": "https://example.com/charts/603288.png"
+  },
+  {
+    "id": 95,
+    "code": "002202",
+    "name": "金风科技",
+    "prediction": 0.58,
+    "price": 118.93,
+    "publishTime": "2025-03-04T03:04:30.956Z",
+    "trendChart": "https://example.com/charts/002202.png"
+  },
+  {
+    "id": 96,
+    "code": "600436",
+    "name": "片仔癀",
+    "prediction": 0.81,
+    "price": 182.44,
+    "publishTime": "2025-03-10T06:30:51.956Z",
+    "trendChart": "https://example.com/charts/600436.png"
+  },
+  {
+    "id": 97,
+    "code": "601225",
+    "name": "陕西煤业",
+    "prediction": -0.79,
+    "price": 125.16,
+    "publishTime": "2025-03-08T03:20:28.956Z",
+    "trendChart": "https://example.com/charts/601225.png"
+  },
+  {
+    "id": 98,
+    "code": "601865",
+    "name": "福莱特",
+    "prediction": -0.06,
+    "price": 136.28,
+    "publishTime": "2025-03-05T04:54:12.956Z",
+    "trendChart": "https://example.com/charts/601865.png"
+  },
+  {
+    "id": 99,
+    "code": "002841",
+    "name": "视源股份",
+    "prediction": 0.73,
+    "price": 124.98,
+    "publishTime": "2025-03-06T04:07:38.956Z",
+    "trendChart": "https://example.com/charts/002841.png"
+  },
+  {
+    "id": 100,
+    "code": "603899",
+    "name": "晨光文具",
+    "prediction": 0.8,
+    "price": 173.12,
+    "publishTime": "2025-03-04T01:16:36.956Z",
+    "trendChart": "https://example.com/charts/603899.png"
+  }
+]

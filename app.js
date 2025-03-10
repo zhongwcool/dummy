@@ -95,13 +95,13 @@ app.use('/api/auth', authRouter);
 
 // 404 处理
 app.use((req, res) => {
-  res.status(404).json({ error: 'Endpoint not found' });
+    res.status(404).json({error: 'Endpoint not found'});
 });
 
 // 错误处理
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something went wrong!' });
+    console.error(err.stack);
+    res.status(500).json({error: 'Something went wrong!'});
 });
 
 // 启动服务器

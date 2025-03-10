@@ -1,26 +1,45 @@
 // routes/products.js
 const express = require('express');
 const router = express.Router();
+const fs = require('fs');
+const path = require('path');
 
-// 获取商品列表
+// 获取产品列表
 router.get('/', (req, res) => {
-  const products = [
-    { id: 1, name: 'Laptop', price: 999 },
-    { id: 2, name: 'Phone', price: 699 },
-    { id: 3, name: 'Headphones', price: 199 }
-  ];
-  res.json(products);
+    try {
+        // 从JSON文件读取数据
+        const filePath = path.join(__dirname, '..', 'data', 'stocks.json');
+        const stockData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+
+        // 随机选择10条记录
+        const shuffled = [...stockData].sort(() => 0.5 - Math.random());
+        const selectedStocks = shuffled.slice(0, 10);
+
+        res.json(selectedStocks);
+    } catch (error) {
+        console.error('Error reading stock data:', error);
+        res.status(500).json({error: 'Failed to retrieve stock data'});
+    }
 });
 
-// 创建商品
-router.post('/', (req, res) => {
-  const { name, price } = req.body;
-  if (!name || !price) {
-    return res.status(400).json({ error: 'Name and price are required' });
-  }
-  // In a real app, you would save to database
-  const newProduct = { id: Date.now(), name, price };
-  res.status(201).json(newProduct);
+// 获取单个产品详情
+router.get('/:id', (req, res) => {
+    try {
+        const id = parseInt(req.params.id);
+        const filePath = path.join(__dirname, '..', 'data', 'stocks.json');
+        const stockData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+
+        const stock = stockData.find(s => s.id === id);
+
+        if (stock) {
+            res.json(stock);
+        } else {
+            res.status(404).json({error: 'Stock not found'});
+        }
+    } catch (error) {
+        console.error('Error retrieving stock:', error);
+        res.status(500).json({error: 'Failed to retrieve stock data'});
+    }
 });
 
 module.exports = router;
