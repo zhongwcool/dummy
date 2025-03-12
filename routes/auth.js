@@ -9,11 +9,10 @@ router.post('/login', (req, res) => {
         res.json({
             success: true,
             token: 'fake-jwt-token',
-            user: {
-                id: 1,
-                username: 'admin',
-                role: 'administrator'
-            }
+            userId: 'zhongwcool@163.com',
+            username: 'admin',
+            displayName: '大魔王',
+            message: 'Login successful'
         });
     } else {
         res.status(401).json({success: false, message: 'Invalid credentials'});
@@ -21,8 +20,8 @@ router.post('/login', (req, res) => {
 });
 
 // 验证token是否有效
-router.post('/verify-token', (req, res) => {
-    const {token} = req.body;
+router.get('/verify-token', (req, res) => {
+    const token = req.headers['authorization'];
     if (token && token === 'fake-jwt-token') {
         res.json({valid: true});
     } else {
