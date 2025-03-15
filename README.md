@@ -67,6 +67,31 @@ Node.js + Express 实现简易测试api
 ### 产品管理
 
 - GET /api/products - 获取产品列表
+    - 不带参数：返回所有产品数据
+    - 分页参数（可选）：
+        - `page`: 页码
+        - `pageSize`: 每页数量
+    - 响应示例（无分页）：
+      ```json
+      {
+          "success": true,
+          "total": 100,
+          "products": [...]
+      }
+      ```
+    - 响应示例（带分页）：
+      ```json
+      {
+          "success": true,
+          "pagination": {
+              "total": 100,
+              "page": 1,
+              "pageSize": 10,
+              "totalPages": 10
+          },
+          "products": [...]
+      }
+      ```
 - POST /api/products - 创建新产品
 - PUT /api/products/:id - 更新产品信息
 - DELETE /api/products/:id - 删除产品

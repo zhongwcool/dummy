@@ -8,9 +8,38 @@ const {productDb} = require('../utils/fileHandler');
 router.get('/', verifyToken, async (req, res) => {
     try {
         const products = await productDb.read();
+
+        // 检查是否有分页参数
+        const page = req.query.page;
+        const pageSize = req.query.pageSize;
+
+        // 如果没有分页参数，返回全部数据
+        if (!page && !pageSize) {
+            return res.json({
+                success: true,
+                total: products.length,
+                products: products
+            });
+        }
+
+        // 有分页参数时，返回分页数据
+        const currentPage = parseInt(page) || 1;
+        const itemsPerPage = parseInt(pageSize) || 10;
+
+        // 计算分页
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const paginatedProducts = products.slice(startIndex, endIndex);
+
         res.json({
             success: true,
-            products: products
+            pagination: {
+                total: products.length,
+                page: currentPage,
+                pageSize: itemsPerPage,
+                totalPages: Math.ceil(products.length / itemsPerPage)
+            },
+            products: paginatedProducts
         });
     } catch (error) {
         console.error('Error getting products:', error);
