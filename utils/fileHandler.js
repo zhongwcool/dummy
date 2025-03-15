@@ -5,7 +5,7 @@ const path = require('path');
 // 数据文件路径
 const DATA_FILES = {
     USERS: path.join(__dirname, '../data/users.json'),
-    PRODUCTS: path.join(__dirname, '../data/products.json')
+    PRODUCTS: path.join(__dirname, '../data/stocks.json')
 };
 
 // 读取 JSON 文件
