@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const fs = require('fs').promises;
 const path = require('path');
+const {verifyToken} = require("../middleware/auth");
 require('dotenv').config();
 
 // 用户数据文件路径
@@ -101,29 +102,6 @@ router.post('/login', async (req, res) => {
         });
     }
 });
-
-// 验证token中间件
-const verifyToken = (req, res, next) => {
-    const token = req.headers.authorization?.split(' ')[1]; // Bearer TOKEN格式
-
-    if (!token) {
-        return res.status(401).json({
-            valid: false,
-            message: '未提供认证token'
-        });
-    }
-
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = decoded;
-        next();
-    } catch (error) {
-        return res.status(401).json({
-            valid: false,
-            message: 'token无效或已过期'
-        });
-    }
-};
 
 // 验证token是否有效
 router.get('/verify-token', verifyToken, (req, res) => {
