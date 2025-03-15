@@ -1,22 +1,13 @@
 # dummy
+
 Node.js + Express 实现简易测试api
-
-## 功能特性
-
-- 用户认证 (登录/登出/验证令牌)
-- 用户管理 API 
-- 产品管理 API
-- 跨域请求支持 (CORS)
 
 ## 运行必要条件
 
 ### 系统要求
+
 - Node.js (v12.0.0 或更高版本)
 - npm (v6.0.0 或更高版本)
-
-### 主要依赖
-- Express.js - Web 应用框架
-- CORS - 跨域资源共享中间件
 
 ## 安装和运行步骤
 
@@ -28,10 +19,20 @@ Node.js + Express 实现简易测试api
 
 2. 安装项目依赖
    ```bash
-   npm install
+   npm install express cors dotenv
+   npm install jsonwebtoken bcryptjs
+   ```
+3. 创建 `.env` 文件并配置环境变量
+   可以使用 openssl 命令生成 JWT 密钥
+   ```bash
+   openssl rand -hex 32
+   ```
+   将生成的密钥添加到 `.env` 文件中
+   ```text
+   JWT_SECRET=your_generated_secret_key
    ```
 
-3. 启动服务器
+4. 启动服务器
    ```bash
    # 使用标准版本
    node app.js
@@ -41,17 +42,20 @@ Node.js + Express 实现简易测试api
 ## API 文档
 
 ### 用户认证
+
 - POST /api/auth/login - 用户登录
 - POST /api/auth/logout - 用户登出
 - GET /api/auth/verify - 验证令牌
 
 ### 用户管理
+
 - GET /api/users - 获取用户列表
 - POST /api/users - 创建新用户
 - PUT /api/users/:id - 更新用户信息
 - DELETE /api/users/:id - 删除用户
 
 ### 产品管理
+
 - GET /api/products - 获取产品列表
 - POST /api/products - 创建新产品
 - PUT /api/products/:id - 更新产品信息
@@ -60,6 +64,7 @@ Node.js + Express 实现简易测试api
 ## 开发说明
 
 ### 项目结构
+
 ```
 dummy/
   ├── node_modules/          # 项目依赖
@@ -74,7 +79,9 @@ dummy/
 ```
 
 ### 环境变量配置
+
 创建 `.env` 文件在项目根目录，包含以下配置：
+
 ```
 # 服务器运行端口
 PORT=5000
