@@ -75,6 +75,7 @@ app.use(express.json()); // 解析 JSON 请求体
 const userRouter = require('./routes/users');
 const productRouter = require('./routes/products');
 const authRouter = require('./routes/auth');
+const updateRouter = require('./routes/update');
 
 // 基础路由
 app.get('/', (req, res) => {
@@ -83,7 +84,8 @@ app.get('/', (req, res) => {
         endpoints: {
             users: '/api/users',
             products: '/api/products',
-            auth: '/api/auth'
+            auth: '/api/auth',
+            update: '/api/update'
         }
     });
 });
@@ -92,6 +94,7 @@ app.get('/', (req, res) => {
 app.use('/api/users', userRouter);
 app.use('/api/products', productRouter);
 app.use('/api/auth', authRouter);
+app.use('/api/update', updateRouter);
 
 // 404 处理
 app.use((req, res) => {
