@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APK上传测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        #result {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            background-color: #f9f9f9;
+            white-space: pre-wrap;
+        }
+
+        .manual-input {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            background-color: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+<h1>APK上传测试</h1>
+<p>如果自动读取APK信息失败，您可以勾选"手动输入版本信息"选项。</p>
+
+<form id="uploadForm">
+    <div class="form-group">
+        <label for="apkFile">APK文件:</label>
+        <input type="file" id="apkFile" name="apk" accept=".apk" required>
+    </div>
+
+    <div class="form-group">
+        <input type="checkbox" id="manualInput" onchange="toggleManualInput()">
+        <label for="manualInput">手动输入版本信息</label>
+    </div>
+
+    <div id="manualInputFields" class="manual-input" style="display: none;">
+        <div class="form-group">
+            <label for="versionName">版本名称:</label>
+            <input type="text" id="versionName" name="versionName" placeholder="例如: 1.0.0">
+        </div>
+        <div class="form-group">
+            <label for="versionCode">版本号:</label>
+            <input type="number" id="versionCode" name="versionCode" placeholder="例如: 1">
+        </div>
+        <div class="form-group">
+            <label for="packageName">包名:</label>
+            <input type="text" id="packageName" name="packageName" placeholder="例如: com.example.app">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="updateDescription">更新说明:</label>
+        <textarea id="updateDescription" name="updateDescription" rows="3" required></textarea>
+    </div>
+
+    <div class="form-group">
+        <input type="checkbox" id="forceUpdate" name="forceUpdate">
+        <label for="forceUpdate">强制更新</label>
+    </div>
+
+    <button type="submit">上传</button>
+</form>
+
+<div id="result"></div>
+
+<script>
+    function toggleManualInput() {
+        const manualInputFields = document.getElementById('manualInputFields');
+        const isChecked = document.getElementById('manualInput').checked;
+
+        manualInputFields.style.display = isChecked ? 'block' : 'none';
+
+        // 如果手动输入被选中，设置字段为必填
+        const fields = ['versionName', 'versionCode', 'packageName'];
+        fields.forEach(field => {
+            document.getElementById(field).required = isChecked;
+        });
+    }
+
+    document.getElementById('uploadForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const formData = new FormData(this);
+        const resultDiv = document.getElementById('result');
+
+        resultDiv.textContent = '上传中...';
+
+        fetch('/api/update/upload', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || '上传失败');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('上传成功:', data);
+                resultDiv.textContent = JSON.stringify(data, null, 2);
+            })
+            .catch(error => {
+                console.error('上传失败:', error);
+                resultDiv.textContent = '上传失败: ' + error.message;
+            });
+    });
+</script>
+</body>
+</html> 

@@ -1,5 +1,7 @@
 # dummy
 
+> 停止npm：Get-Process -Name node | Stop-Process -Force
+
 Node.js + Express 实现简易测试api
 
 ## 运行必要条件

@@ -2,6 +2,7 @@ const os = require('os');
 const http = require('http');
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 5000;
 // 获取当前环境，如果未设置则默认为开发环境
@@ -70,6 +71,10 @@ function getExternalIPAddress(callback) {
 // 中间件
 app.use(cors()); // 允许所有跨域请求
 app.use(express.json()); // 解析 JSON 请求体
+app.use(express.urlencoded({extended: true})); // 解析 URL 编码的请求体
+
+// 静态文件服务
+app.use(express.static(path.join(__dirname, 'public')));
 
 // 导入路由
 const userRouter = require('./routes/users');

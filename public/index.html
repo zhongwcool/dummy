@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APK版本管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+            background-color: #f8f9fa;
+        }
+
+        .header {
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #e5e5e5;
+            padding-bottom: 1rem;
+        }
+
+        .version-card {
+            margin-bottom: 1rem;
+            transition: all 0.3s;
+        }
+
+        .version-card:hover {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+
+        .upload-form {
+            background-color: #fff;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            margin-bottom: 2rem;
+        }
+
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-spinner {
+            width: 3rem;
+            height: 3rem;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1 class="text-center">APK版本管理系统</h1>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <div class="upload-form">
+                <h3 class="mb-3">上传新版本</h3>
+                <form id="uploadForm">
+                    <div class="mb-3">
+                        <label for="apkFile" class="form-label">APK文件</label>
+                        <input type="file" class="form-control" id="apkFile" name="apk" accept=".apk" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="updateDescription" class="form-label">更新说明</label>
+                        <textarea class="form-control" id="updateDescription" name="updateDescription" rows="3"
+                                  required></textarea>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="forceUpdate" name="forceUpdate">
+                        <label class="form-check-label" for="forceUpdate">强制更新</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">上传</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <h3 class="mb-3">最新版本</h3>
+            <div id="latestVersion" class="row">
+                <div class="col-12 text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">加载中...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <h3 class="mb-3">历史版本</h3>
+            <div id="versionHistory" class="row">
+                <div class="col-12 text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">加载中...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="loading" id="loading">
+    <div class="spinner-border text-light loading-spinner" role="status">
+        <span class="visually-hidden">上传中...</span>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // 获取版本信息
+        fetchVersions();
+
+        // 上传表单提交
+        const uploadForm = document.getElementById('uploadForm');
+        uploadForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            uploadAPK();
+        });
+    });
+
+    // 获取版本信息
+    function fetchVersions() {
+        fetch('/api/update/history')
+            .then(response => response.json())
+            .then(data => {
+                renderLatestVersion(data.latest);
+                renderVersionHistory(data.history);
+            })
+            .catch(error => {
+                console.error('获取版本信息失败:', error);
+                alert('获取版本信息失败，请刷新页面重试');
+            });
+    }
+
+    // 渲染最新版本
+    function renderLatestVersion(version) {
+        const latestVersionEl = document.getElementById('latestVersion');
+
+        if (!version || Object.keys(version).length === 0) {
+            latestVersionEl.innerHTML = '<div class="col-12"><div class="alert alert-info">暂无版本信息</div></div>';
+            return;
+        }
+
+        const releaseDate = version.uploadDate || '未知日期';
+        const fileSize = formatFileSize(version.fileSize);
+
+        latestVersionEl.innerHTML = `
+                <div class="col-md-12">
+                    <div class="card version-card">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                ${version.versionName} 
+                                <span class="badge bg-primary">最新</span>
+                                ${version.forceUpdate ? '<span class="badge bg-danger">强制更新</span>' : ''}
+                            </h5>
+                            <h6 class="card-subtitle mb-2 text-muted">版本号: ${version.versionCode}</h6>
+                            <p class="card-text">
+                                <small class="text-muted">上传日期: ${releaseDate}</small>
+                                ${fileSize ? `<small class="text-muted ms-2">文件大小: ${fileSize}</small>` : ''}
+                            </p>
+                            <p class="card-text">${version.updateDescription.replace(/\n/g, '<br>')}</p>
+                            <a href="${version.downloadUrl}" class="btn btn-success" download>下载APK</a>
+                        </div>
+                    </div>
+                </div>
+            `;
+    }
+
+    // 渲染版本历史
+    function renderVersionHistory(versions) {
+        const versionHistoryEl = document.getElementById('versionHistory');
+
+        if (!versions || versions.length === 0) {
+            versionHistoryEl.innerHTML = '<div class="col-12"><div class="alert alert-info">暂无历史版本</div></div>';
+            return;
+        }
+
+        let html = '';
+        versions.forEach(version => {
+            const releaseDate = version.releaseDate || '未知日期';
+            const fileSize = formatFileSize(version.fileSize);
+
+            html += `
+                    <div class="col-md-6 mb-3">
+                        <div class="card version-card h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    ${version.versionName}
+                                    ${version.forceUpdate ? '<span class="badge bg-danger">强制更新</span>' : ''}
+                                </h5>
+                                <h6 class="card-subtitle mb-2 text-muted">版本号: ${version.versionCode}</h6>
+                                <p class="card-text">
+                                    <small class="text-muted">发布日期: ${releaseDate}</small>
+                                    ${fileSize ? `<small class="text-muted ms-2">文件大小: ${fileSize}</small>` : ''}
+                                </p>
+                                <p class="card-text">${version.updateDescription.replace(/\n/g, '<br>')}</p>
+                                <div class="d-flex justify-content-between">
+                                    <a href="${version.downloadUrl}" class="btn btn-outline-primary" download>下载APK</a>
+                                    <button class="btn btn-outline-danger" onclick="deleteVersion(${version.versionCode})">删除</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+        });
+
+        versionHistoryEl.innerHTML = html;
+    }
+
+    // 上传APK
+    function uploadAPK() {
+        const formData = new FormData(document.getElementById('uploadForm'));
+        const loading = document.getElementById('loading');
+
+        loading.style.display = 'flex';
+
+        fetch('/api/update/upload', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || '上传失败');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                loading.style.display = 'none';
+                const version = data.version;
+                alert(`上传成功！\n版本名称: ${version.versionName}\n版本号: ${version.versionCode}\n包名: ${version.packageName}`);
+                document.getElementById('uploadForm').reset();
+                fetchVersions();
+            })
+            .catch(error => {
+                loading.style.display = 'none';
+                console.error('上传失败:', error);
+                alert(error.message || '上传失败，请重试');
+            });
+    }
+
+    // 删除版本
+    function deleteVersion(versionCode) {
+        if (!confirm('确定要删除此版本吗？此操作不可恢复！')) {
+            return;
+        }
+
+        fetch(`/api/update/${versionCode}`, {
+            method: 'DELETE'
+        })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => {
+                        throw new Error(data.error || '删除失败');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                alert('删除成功');
+                fetchVersions();
+            })
+            .catch(error => {
+                console.error('删除失败:', error);
+                alert(error.message || '删除失败，请重试');
+            });
+    }
+
+    // 格式化文件大小
+    function formatFileSize(bytes) {
+        if (!bytes) return '';
+
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let size = bytes;
+        let unitIndex = 0;
+
+        while (size >= 1024 && unitIndex < units.length - 1) {
+            size /= 1024;
+            unitIndex++;
+        }
+
+        return `${size.toFixed(2)} ${units[unitIndex]}`;
+    }
+</script>
+</body>
+</html> 
