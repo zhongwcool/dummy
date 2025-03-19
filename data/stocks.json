@@ -1,902 +1,902 @@
 [
   {
     "id": "BABA",
-    "code": "BABA",
+    "symbol": "BABA",
     "name": "阿里巴巴",
-    "prediction": -0.4,
-    "price": 136.38,
-    "publishTime": "2025-03-05T06:41:28.955Z",
-    "trendChart": "https://example.com/charts/baba.png"
+    "area": "中国",
+    "industry": "电子商务",
+    "exchange": "NYSE",
+    "list_date": "2014-09-19"
   },
   {
     "id": "600519",
-    "code": "600519",
+    "symbol": "600519",
     "name": "贵州茅台",
-    "prediction": 0.16,
-    "price": 198.53,
-    "publishTime": "2025-03-07T05:41:27.956Z",
-    "trendChart": "https://example.com/charts/600519.png"
+    "area": "中国",
+    "industry": "白酒",
+    "exchange": "SSE",
+    "list_date": "2001-08-27"
   },
   {
     "id": "000858",
-    "code": "000858",
+    "symbol": "000858",
     "name": "五粮液",
-    "prediction": -0.14,
-    "price": 115.65,
-    "publishTime": "2025-03-05T06:19:59.956Z",
-    "trendChart": "https://example.com/charts/000858.png"
+    "area": "中国",
+    "industry": "白酒",
+    "exchange": "SZSE",
+    "list_date": "1998-04-27"
   },
   {
     "id": "601318",
-    "code": "601318",
+    "symbol": "601318",
     "name": "中国平安",
-    "prediction": 0.82,
-    "price": 188.85,
-    "publishTime": "2025-03-07T05:46:56.956Z",
-    "trendChart": "https://example.com/charts/601318.png"
+    "area": "中国",
+    "industry": "保险",
+    "exchange": "SSE",
+    "list_date": "2007-03-01"
   },
   {
     "id": "600036",
-    "code": "600036",
+    "symbol": "600036",
     "name": "招商银行",
-    "prediction": 0.93,
-    "price": 72.8,
-    "publishTime": "2025-03-10T02:27:15.956Z",
-    "trendChart": "https://example.com/charts/600036.png"
+    "area": "中国",
+    "industry": "银行",
+    "exchange": "SSE",
+    "list_date": "2002-04-09"
   },
   {
     "id": "000333",
-    "code": "000333",
+    "symbol": "000333",
     "name": "美的集团",
-    "prediction": -0.76,
-    "price": 65.61,
-    "publishTime": "2025-03-09T07:29:33.956Z",
-    "trendChart": "https://example.com/charts/000333.png"
+    "area": "中国",
+    "industry": "家电",
+    "exchange": "SZSE",
+    "list_date": "2013-09-18"
   },
   {
     "id": "600276",
-    "code": "600276",
+    "symbol": "600276",
     "name": "恒瑞医药",
-    "prediction": 0.15,
-    "price": 87.61,
-    "publishTime": "2025-03-09T08:02:16.956Z",
-    "trendChart": "https://example.com/charts/600276.png"
+    "area": "中国",
+    "industry": "医药",
+    "exchange": "SSE",
+    "list_date": "2000-10-16"
   },
   {
     "id": "601888",
-    "code": "601888",
+    "symbol": "601888",
     "name": "中国中免",
-    "prediction": 0.06,
-    "price": 187.08,
-    "publishTime": "2025-03-05T01:18:07.956Z",
-    "trendChart": "https://example.com/charts/601888.png"
+    "area": "中国",
+    "industry": "零售",
+    "exchange": "SSE",
+    "list_date": "2009-10-15"
   },
   {
     "id": "000651",
-    "code": "000651",
+    "symbol": "000651",
     "name": "格力电器",
-    "prediction": -0.28,
-    "price": 165.03,
-    "publishTime": "2025-03-06T07:47:45.956Z",
-    "trendChart": "https://example.com/charts/000651.png"
+    "area": "中国",
+    "industry": "家电",
+    "exchange": "SZSE",
+    "list_date": "1996-11-18"
   },
   {
     "id": "601166",
-    "code": "601166",
+    "symbol": "601166",
     "name": "兴业银行",
-    "prediction": 0.48,
-    "price": 133.75,
-    "publishTime": "2025-03-05T03:11:12.956Z",
-    "trendChart": "https://example.com/charts/601166.png"
+    "area": "中国",
+    "industry": "银行",
+    "exchange": "SSE",
+    "list_date": "2007-02-05"
   },
   {
     "id": "TCEHY",
-    "code": "TCEHY",
+    "symbol": "TCEHY",
     "name": "腾讯控股",
-    "prediction": -0.9,
-    "price": 52.88,
-    "publishTime": "2025-03-05T03:44:48.956Z",
-    "trendChart": "https://example.com/charts/tcehy.png"
+    "area": "中国",
+    "industry": "互联网",
+    "exchange": "OTC",
+    "list_date": "2004-06-16"
   },
   {
     "id": "601398",
-    "code": "601398",
+    "symbol": "601398",
     "name": "工商银行",
-    "prediction": -0.95,
-    "price": 142.83,
-    "publishTime": "2025-03-09T07:47:03.956Z",
-    "trendChart": "https://example.com/charts/601398.png"
+    "area": "中国",
+    "industry": "银行",
+    "exchange": "SSE",
+    "list_date": "2006-10-27"
   },
   {
     "id": "600887",
-    "code": "600887",
+    "symbol": "600887",
     "name": "伊利股份",
-    "prediction": 0.07,
-    "price": 132.45,
-    "publishTime": "2025-03-06T04:12:04.956Z",
-    "trendChart": "https://example.com/charts/600887.png"
+    "area": "中国",
+    "industry": "食品饮料",
+    "exchange": "SSE",
+    "list_date": "1996-03-12"
   },
   {
     "id": "BIDU",
-    "code": "BIDU",
+    "symbol": "BIDU",
     "name": "百度",
-    "prediction": 0.32,
-    "price": 178.11,
-    "publishTime": "2025-03-10T03:34:01.956Z",
-    "trendChart": "https://example.com/charts/bidu.png"
+    "area": "中国",
+    "industry": "互联网",
+    "exchange": "NASDAQ",
+    "list_date": "2005-08-05"
   },
   {
     "id": "PDD",
-    "code": "PDD",
+    "symbol": "PDD",
     "name": "拼多多",
-    "prediction": 0.79,
-    "price": 163.64,
-    "publishTime": "2025-03-07T04:45:53.956Z",
-    "trendChart": "https://example.com/charts/pdd.png"
+    "area": "中国",
+    "industry": "电子商务",
+    "exchange": "NASDAQ",
+    "list_date": "2018-07-26"
   },
   {
     "id": "002594",
-    "code": "002594",
+    "symbol": "002594",
     "name": "比亚迪",
-    "prediction": -0.23,
-    "price": 184.19,
-    "publishTime": "2025-03-08T03:10:19.956Z",
-    "trendChart": "https://example.com/charts/002594.png"
+    "area": "中国",
+    "industry": "汽车",
+    "exchange": "SZSE",
+    "list_date": "2011-06-30"
   },
   {
     "id": "600030",
-    "code": "600030",
+    "symbol": "600030",
     "name": "中信证券",
-    "prediction": 0.08,
-    "price": 167.15,
-    "publishTime": "2025-03-04T05:08:52.956Z",
-    "trendChart": "https://example.com/charts/600030.png"
+    "area": "中国",
+    "industry": "证券",
+    "exchange": "SSE",
+    "list_date": "2003-01-06"
   },
   {
     "id": "601288",
-    "code": "601288",
+    "symbol": "601288",
     "name": "农业银行",
-    "prediction": -0.73,
-    "price": 164.47,
-    "publishTime": "2025-03-09T04:11:22.956Z",
-    "trendChart": "https://example.com/charts/601288.png"
+    "area": "中国",
+    "industry": "银行",
+    "exchange": "SSE",
+    "list_date": "2010-07-15"
   },
   {
     "id": "000568",
-    "code": "000568",
+    "symbol": "000568",
     "name": "泸州老窖",
-    "prediction": 0.73,
-    "price": 132.72,
-    "publishTime": "2025-03-10T05:53:03.956Z",
-    "trendChart": "https://example.com/charts/000568.png"
+    "area": "中国",
+    "industry": "白酒",
+    "exchange": "SZSE",
+    "list_date": "1994-05-09"
   },
   {
     "id": "JD",
-    "code": "JD",
+    "symbol": "JD",
     "name": "京东",
-    "prediction": -0.36,
-    "price": 108.78,
-    "publishTime": "2025-03-05T07:23:48.956Z",
-    "trendChart": "https://example.com/charts/jd.png"
+    "area": "中国",
+    "industry": "电子商务",
+    "exchange": "NASDAQ",
+    "list_date": "2014-05-22"
   },
   {
     "id": "601899",
-    "code": "601899",
+    "symbol": "601899",
     "name": "紫金矿业",
-    "prediction": -0.77,
-    "price": 181.58,
-    "publishTime": "2025-03-07T05:43:02.956Z",
-    "trendChart": "https://example.com/charts/601899.png"
+    "area": "中国",
+    "industry": "矿业",
+    "exchange": "SSE",
+    "list_date": "2008-04-25"
   },
   {
     "id": "603259",
-    "code": "603259",
+    "symbol": "603259",
     "name": "药明康德",
-    "prediction": 0.18,
-    "price": 144.81,
-    "publishTime": "2025-03-04T08:41:30.956Z",
-    "trendChart": "https://example.com/charts/603259.png"
+    "area": "中国",
+    "industry": "医药",
+    "exchange": "SSE",
+    "list_date": "2018-05-08"
   },
   {
     "id": "002475",
-    "code": "002475",
+    "symbol": "002475",
     "name": "立讯精密",
-    "prediction": -0.85,
-    "price": 92.05,
-    "publishTime": "2025-03-06T05:30:50.956Z",
-    "trendChart": "https://example.com/charts/002475.png"
+    "area": "中国",
+    "industry": "电子",
+    "exchange": "SZSE",
+    "list_date": "2010-09-15"
   },
   {
     "id": "600009",
-    "code": "600009",
+    "symbol": "600009",
     "name": "上海机场",
-    "prediction": 0.14,
-    "price": 139.69,
-    "publishTime": "2025-03-10T01:46:36.956Z",
-    "trendChart": "https://example.com/charts/600009.png"
+    "area": "中国",
+    "industry": "交通",
+    "exchange": "SSE",
+    "list_date": "1998-02-18"
   },
   {
     "id": "000001",
-    "code": "000001",
+    "symbol": "000001",
     "name": "平安银行",
-    "prediction": -0.46,
-    "price": 98.25,
-    "publishTime": "2025-03-05T07:37:06.956Z",
-    "trendChart": "https://example.com/charts/000001.png"
+    "area": "中国",
+    "industry": "银行",
+    "exchange": "SZSE",
+    "list_date": "1991-04-03"
   },
   {
     "id": "NIO",
-    "code": "NIO",
+    "symbol": "NIO",
     "name": "蔚来汽车",
-    "prediction": 0.6,
-    "price": 160.72,
-    "publishTime": "2025-03-06T03:01:37.956Z",
-    "trendChart": "https://example.com/charts/nio.png"
+    "area": "中国",
+    "industry": "汽车",
+    "exchange": "NYSE",
+    "list_date": "2018-09-12"
   },
   {
     "id": "601857",
-    "code": "601857",
+    "symbol": "601857",
     "name": "中国石油",
-    "prediction": -0.33,
-    "price": 139.12,
-    "publishTime": "2025-03-04T05:03:24.956Z",
-    "trendChart": "https://example.com/charts/601857.png"
+    "area": "中国",
+    "industry": "能源",
+    "exchange": "SSE",
+    "list_date": "2007-11-05"
   },
   {
     "id": "600309",
-    "code": "600309",
+    "symbol": "600309",
     "name": "万华化学",
-    "prediction": 0.91,
-    "price": 198.94,
-    "publishTime": "2025-03-08T06:03:25.956Z",
-    "trendChart": "https://example.com/charts/600309.png"
+    "area": "中国",
+    "industry": "化工",
+    "exchange": "SSE",
+    "list_date": "2001-07-23"
   },
   {
     "id": "NTES",
-    "code": "NTES",
+    "symbol": "NTES",
     "name": "网易",
-    "prediction": 0.28,
-    "price": 160.46,
-    "publishTime": "2025-03-06T01:06:12.956Z",
-    "trendChart": "https://example.com/charts/ntes.png"
+    "area": "中国",
+    "industry": "互联网",
+    "exchange": "NASDAQ",
+    "list_date": "2000-06-30"
   },
   {
     "id": "601988",
-    "code": "601988",
+    "symbol": "601988",
     "name": "中国银行",
-    "prediction": 0.78,
-    "price": 137.05,
-    "publishTime": "2025-03-05T08:04:21.956Z",
-    "trendChart": "https://example.com/charts/601988.png"
+    "area": "中国",
+    "industry": "银行",
+    "exchange": "SSE",
+    "list_date": "2006-07-05"
   },
   {
     "id": "600585",
-    "code": "600585",
+    "symbol": "600585",
     "name": "海螺水泥",
-    "prediction": 1,
-    "price": 100.69,
-    "publishTime": "2025-03-05T03:39:36.956Z",
-    "trendChart": "https://example.com/charts/600585.png"
+    "area": "中国",
+    "industry": "建材",
+    "exchange": "SSE",
+    "list_date": "2002-02-07"
   },
   {
     "id": "601238",
-    "code": "601238",
+    "symbol": "601238",
     "name": "广汽集团",
-    "prediction": -0.5,
-    "price": 101.21,
-    "publishTime": "2025-03-07T03:05:29.956Z",
-    "trendChart": "https://example.com/charts/601238.png"
+    "area": "中国",
+    "industry": "汽车",
+    "exchange": "SSE",
+    "list_date": "2012-03-29"
   },
   {
     "id": "601088",
-    "code": "601088",
+    "symbol": "601088",
     "name": "中国神华",
-    "prediction": 0.66,
-    "price": 192.59,
-    "publishTime": "2025-03-04T08:01:28.956Z",
-    "trendChart": "https://example.com/charts/601088.png"
+    "area": "中国",
+    "industry": "能源",
+    "exchange": "SSE",
+    "list_date": "2007-10-09"
   },
   {
     "id": "600104",
-    "code": "600104",
+    "symbol": "600104",
     "name": "上汽集团",
-    "prediction": -0.45,
-    "price": 140.64,
-    "publishTime": "2025-03-07T02:38:01.956Z",
-    "trendChart": "https://example.com/charts/600104.png"
+    "area": "中国",
+    "industry": "汽车",
+    "exchange": "SSE",
+    "list_date": "1997-11-07"
   },
   {
     "id": "600048",
-    "code": "600048",
+    "symbol": "600048",
     "name": "保利发展",
-    "prediction": 0.25,
-    "price": 185.84,
-    "publishTime": "2025-03-04T04:34:53.956Z",
-    "trendChart": "https://example.com/charts/600048.png"
+    "area": "中国",
+    "industry": "房地产",
+    "exchange": "SSE",
+    "list_date": "2006-07-31"
   },
   {
     "id": "601668",
-    "code": "601668",
+    "symbol": "601668",
     "name": "中国建筑",
-    "prediction": 0.75,
-    "price": 89,
-    "publishTime": "2025-03-06T06:02:34.956Z",
-    "trendChart": "https://example.com/charts/601668.png"
+    "area": "中国",
+    "industry": "建筑",
+    "exchange": "SSE",
+    "list_date": "2009-07-29"
   },
   {
     "id": "601628",
-    "code": "601628",
+    "symbol": "601628",
     "name": "中国人寿",
-    "prediction": 0.8,
-    "price": 60.45,
-    "publishTime": "2025-03-08T07:13:43.956Z",
-    "trendChart": "https://example.com/charts/601628.png"
+    "area": "中国",
+    "industry": "保险",
+    "exchange": "SSE",
+    "list_date": "2007-01-09"
   },
   {
     "id": "601601",
-    "code": "601601",
+    "symbol": "601601",
     "name": "中国太保",
-    "prediction": 0.22,
-    "price": 136.25,
-    "publishTime": "2025-03-05T07:42:15.956Z",
-    "trendChart": "https://example.com/charts/601601.png"
+    "area": "中国",
+    "industry": "保险",
+    "exchange": "SSE",
+    "list_date": "2007-12-25"
   },
   {
     "id": "601818",
-    "code": "601818",
+    "symbol": "601818",
     "name": "光大银行",
-    "prediction": -0.73,
-    "price": 102.2,
-    "publishTime": "2025-03-07T05:25:52.956Z",
-    "trendChart": "https://example.com/charts/601818.png"
+    "area": "中国",
+    "industry": "银行",
+    "exchange": "SSE",
+    "list_date": "2010-08-18"
   },
   {
     "id": "600028",
-    "code": "600028",
+    "symbol": "600028",
     "name": "中国石化",
-    "prediction": 0.81,
-    "price": 186.5,
-    "publishTime": "2025-03-08T06:14:13.956Z",
-    "trendChart": "https://example.com/charts/600028.png"
+    "area": "中国",
+    "industry": "能源",
+    "exchange": "SSE",
+    "list_date": "2001-08-08"
   },
   {
     "id": "600809",
-    "code": "600809",
+    "symbol": "600809",
     "name": "山西汾酒",
-    "prediction": 0.7,
-    "price": 125.92,
-    "publishTime": "2025-03-07T03:23:08.956Z",
-    "trendChart": "https://example.com/charts/600809.png"
+    "area": "中国",
+    "industry": "白酒",
+    "exchange": "SSE",
+    "list_date": "1996-08-19"
   },
   {
     "id": "600690",
-    "code": "600690",
+    "symbol": "600690",
     "name": "海尔智家",
-    "prediction": -0.92,
-    "price": 188.58,
-    "publishTime": "2025-03-07T05:33:12.956Z",
-    "trendChart": "https://example.com/charts/600690.png"
+    "area": "中国",
+    "industry": "家电",
+    "exchange": "SSE",
+    "list_date": "1993-11-19"
   },
   {
     "id": "601336",
-    "code": "601336",
+    "symbol": "601336",
     "name": "新华保险",
-    "prediction": -0.55,
-    "price": 96.96,
-    "publishTime": "2025-03-05T05:33:12.956Z",
-    "trendChart": "https://example.com/charts/601336.png"
+    "area": "中国",
+    "industry": "保险",
+    "exchange": "SSE",
+    "list_date": "2011-12-16"
   },
   {
     "id": "601328",
-    "code": "601328",
+    "symbol": "601328",
     "name": "交通银行",
-    "prediction": 0.9,
-    "price": 171.44,
-    "publishTime": "2025-03-05T03:24:36.956Z",
-    "trendChart": "https://example.com/charts/601328.png"
+    "area": "中国",
+    "industry": "银行",
+    "exchange": "SSE",
+    "list_date": "2007-05-15"
   },
   {
     "id": "600031",
-    "code": "600031",
+    "symbol": "600031",
     "name": "三一重工",
-    "prediction": 0.06,
-    "price": 183.89,
-    "publishTime": "2025-03-10T01:06:07.956Z",
-    "trendChart": "https://example.com/charts/600031.png"
+    "area": "中国",
+    "industry": "机械",
+    "exchange": "SSE",
+    "list_date": "2003-07-03"
   },
   {
     "id": "002714",
-    "code": "002714",
+    "symbol": "002714",
     "name": "牧原股份",
-    "prediction": -0.36,
-    "price": 110.08,
-    "publishTime": "2025-03-08T02:22:13.956Z",
-    "trendChart": "https://example.com/charts/002714.png"
+    "area": "中国",
+    "industry": "农业",
+    "exchange": "SZSE",
+    "list_date": "2014-01-28"
   },
   {
     "id": "002352",
-    "code": "002352",
+    "symbol": "002352",
     "name": "顺丰控股",
-    "prediction": -0.33,
-    "price": 144.51,
-    "publishTime": "2025-03-05T07:48:58.956Z",
-    "trendChart": "https://example.com/charts/002352.png"
+    "area": "中国",
+    "industry": "物流",
+    "exchange": "SZSE",
+    "list_date": "2010-02-05"
   },
   {
     "id": "603799",
-    "code": "603799",
+    "symbol": "603799",
     "name": "华友钴业",
-    "prediction": -0.55,
-    "price": 93.11,
-    "publishTime": "2025-03-08T04:22:30.956Z",
-    "trendChart": "https://example.com/charts/603799.png"
+    "area": "中国",
+    "industry": "有色金属",
+    "exchange": "SSE",
+    "list_date": "2015-01-29"
   },
   {
     "id": "600438",
-    "code": "600438",
+    "symbol": "600438",
     "name": "通威股份",
-    "prediction": -0.73,
-    "price": 195.98,
-    "publishTime": "2025-03-09T07:18:04.956Z",
-    "trendChart": "https://example.com/charts/600438.png"
+    "area": "中国",
+    "industry": "农业",
+    "exchange": "SSE",
+    "list_date": "2004-06-24"
   },
   {
     "id": "603501",
-    "code": "603501",
+    "symbol": "603501",
     "name": "韦尔股份",
-    "prediction": -0.64,
-    "price": 93.13,
-    "publishTime": "2025-03-08T08:18:22.956Z",
-    "trendChart": "https://example.com/charts/603501.png"
+    "area": "中国",
+    "industry": "半导体",
+    "exchange": "SSE",
+    "list_date": "2017-05-04"
   },
   {
     "id": "XPEV",
-    "code": "XPEV",
+    "symbol": "XPEV",
     "name": "小鹏汽车",
-    "prediction": -0.61,
-    "price": 108.91,
-    "publishTime": "2025-03-10T02:13:57.956Z",
-    "trendChart": "https://example.com/charts/xpev.png"
+    "area": "中国",
+    "industry": "汽车",
+    "exchange": "NYSE",
+    "list_date": "2020-08-27"
   },
   {
     "id": "LI",
-    "code": "LI",
+    "symbol": "LI",
     "name": "理想汽车",
-    "prediction": 0.21,
-    "price": 172.89,
-    "publishTime": "2025-03-08T02:02:43.956Z",
-    "trendChart": "https://example.com/charts/li.png"
+    "area": "中国",
+    "industry": "汽车",
+    "exchange": "NASDAQ",
+    "list_date": "2020-07-30"
   },
   {
     "id": "BILI",
-    "code": "BILI",
+    "symbol": "BILI",
     "name": "哔哩哔哩",
-    "prediction": -0.1,
-    "price": 123.53,
-    "publishTime": "2025-03-06T05:30:43.956Z",
-    "trendChart": "https://example.com/charts/bili.png"
+    "area": "中国",
+    "industry": "娱乐",
+    "exchange": "NASDAQ",
+    "list_date": "2018-03-28"
   },
   {
     "id": "TME",
-    "code": "TME",
+    "symbol": "TME",
     "name": "腾讯音乐",
-    "prediction": 0.83,
-    "price": 50.56,
-    "publishTime": "2025-03-09T02:33:19.956Z",
-    "trendChart": "https://example.com/charts/tme.png"
+    "area": "中国",
+    "industry": "娱乐",
+    "exchange": "NYSE",
+    "list_date": "2018-12-12"
   },
   {
     "id": "YUMC",
-    "code": "YUMC",
+    "symbol": "YUMC",
     "name": "百胜中国",
-    "prediction": 0.69,
-    "price": 165.48,
-    "publishTime": "2025-03-05T08:27:11.956Z",
-    "trendChart": "https://example.com/charts/yumc.png"
+    "area": "中国",
+    "industry": "餐饮",
+    "exchange": "NYSE",
+    "list_date": "2016-11-01"
   },
   {
     "id": "000725",
-    "code": "000725",
+    "symbol": "000725",
     "name": "京东方A",
-    "prediction": -0.5,
-    "price": 174.68,
-    "publishTime": "2025-03-06T08:24:28.956Z",
-    "trendChart": "https://example.com/charts/000725.png"
+    "area": "中国",
+    "industry": "电子",
+    "exchange": "SZSE",
+    "list_date": "1997-05-08"
   },
   {
     "id": "002415",
-    "code": "002415",
+    "symbol": "002415",
     "name": "海康威视",
-    "prediction": -0.96,
-    "price": 125.68,
-    "publishTime": "2025-03-07T04:56:55.956Z",
-    "trendChart": "https://example.com/charts/002415.png"
+    "area": "中国",
+    "industry": "电子",
+    "exchange": "SZSE",
+    "list_date": "2010-05-28"
   },
   {
     "id": "601919",
-    "code": "601919",
+    "symbol": "601919",
     "name": "中远海控",
-    "prediction": 0.21,
-    "price": 182.07,
-    "publishTime": "2025-03-06T07:04:43.956Z",
-    "trendChart": "https://example.com/charts/601919.png"
+    "area": "中国",
+    "industry": "航运",
+    "exchange": "SSE",
+    "list_date": "2007-12-26"
   },
   {
     "id": "600050",
-    "code": "600050",
+    "symbol": "600050",
     "name": "中国联通",
-    "prediction": 0.77,
-    "price": 56.98,
-    "publishTime": "2025-03-07T05:04:12.956Z",
-    "trendChart": "https://example.com/charts/600050.png"
+    "area": "中国",
+    "industry": "通信",
+    "exchange": "SSE",
+    "list_date": "2002-10-09"
   },
   {
     "id": "600019",
-    "code": "600019",
+    "symbol": "600019",
     "name": "宝钢股份",
-    "prediction": 0.09,
-    "price": 108.87,
-    "publishTime": "2025-03-06T08:08:09.956Z",
-    "trendChart": "https://example.com/charts/600019.png"
+    "area": "中国",
+    "industry": "钢铁",
+    "exchange": "SSE",
+    "list_date": "2000-12-12"
   },
   {
     "id": "600029",
-    "code": "600029",
+    "symbol": "600029",
     "name": "南方航空",
-    "prediction": -0.42,
-    "price": 152.99,
-    "publishTime": "2025-03-08T03:40:26.956Z",
-    "trendChart": "https://example.com/charts/600029.png"
+    "area": "中国",
+    "industry": "航空",
+    "exchange": "SSE",
+    "list_date": "2003-07-25"
   },
   {
     "id": "600406",
-    "code": "600406",
+    "symbol": "600406",
     "name": "国电南瑞",
-    "prediction": 0.41,
-    "price": 107.97,
-    "publishTime": "2025-03-08T07:47:49.956Z",
-    "trendChart": "https://example.com/charts/600406.png"
+    "area": "中国",
+    "industry": "电力设备",
+    "exchange": "SSE",
+    "list_date": "2004-05-12"
   },
   {
     "id": "601985",
-    "code": "601985",
+    "symbol": "601985",
     "name": "中国核电",
-    "prediction": 0.92,
-    "price": 165.26,
-    "publishTime": "2025-03-05T08:35:39.956Z",
-    "trendChart": "https://example.com/charts/601985.png"
+    "area": "中国",
+    "industry": "电力",
+    "exchange": "SSE",
+    "list_date": "2015-06-10"
   },
   {
     "id": "601766",
-    "code": "601766",
+    "symbol": "601766",
     "name": "中国中车",
-    "prediction": -0.3,
-    "price": 151.36,
-    "publishTime": "2025-03-04T02:22:56.956Z",
-    "trendChart": "https://example.com/charts/601766.png"
+    "area": "中国",
+    "industry": "机械设备",
+    "exchange": "SSE",
+    "list_date": "2008-08-18"
   },
   {
     "id": "600547",
-    "code": "600547",
+    "symbol": "600547",
     "name": "山东黄金",
-    "prediction": 0.17,
-    "price": 57.44,
-    "publishTime": "2025-03-08T07:19:11.956Z",
-    "trendChart": "https://example.com/charts/600547.png"
+    "area": "中国",
+    "industry": "黄金",
+    "exchange": "SSE",
+    "list_date": "2003-08-28"
   },
   {
     "id": "600660",
-    "code": "600660",
+    "symbol": "600660",
     "name": "福耀玻璃",
-    "prediction": -0.38,
-    "price": 148.53,
-    "publishTime": "2025-03-06T04:53:05.956Z",
-    "trendChart": "https://example.com/charts/600660.png"
+    "area": "中国",
+    "industry": "汽车零部件",
+    "exchange": "SSE",
+    "list_date": "1993-06-10"
   },
   {
     "id": "601012",
-    "code": "601012",
+    "symbol": "601012",
     "name": "隆基绿能",
-    "prediction": 0.99,
-    "price": 95.52,
-    "publishTime": "2025-03-05T06:48:49.956Z",
-    "trendChart": "https://example.com/charts/601012.png"
+    "area": "中国",
+    "industry": "光伏",
+    "exchange": "SSE",
+    "list_date": "2012-04-11"
   },
   {
     "id": "600745",
-    "code": "600745",
+    "symbol": "600745",
     "name": "闻泰科技",
-    "prediction": -0.06,
-    "price": 155.05,
-    "publishTime": "2025-03-07T03:22:48.956Z",
-    "trendChart": "https://example.com/charts/600745.png"
+    "area": "中国",
+    "industry": "电子",
+    "exchange": "SSE",
+    "list_date": "1996-03-13"
   },
   {
     "id": "600989",
-    "code": "600989",
+    "symbol": "600989",
     "name": "宝丰能源",
-    "prediction": -0.63,
-    "price": 71.7,
-    "publishTime": "2025-03-04T02:36:22.956Z",
-    "trendChart": "https://example.com/charts/600989.png"
+    "area": "中国",
+    "industry": "煤炭",
+    "exchange": "SSE",
+    "list_date": "2019-05-16"
   },
   {
     "id": "601633",
-    "code": "601633",
+    "symbol": "601633",
     "name": "长城汽车",
-    "prediction": -0.05,
-    "price": 172.92,
-    "publishTime": "2025-03-08T07:37:06.956Z",
-    "trendChart": "https://example.com/charts/601633.png"
+    "area": "中国",
+    "industry": "汽车",
+    "exchange": "SSE",
+    "list_date": "2011-09-28"
   },
   {
     "id": "601229",
-    "code": "601229",
+    "symbol": "601229",
     "name": "上海银行",
-    "prediction": -0.14,
-    "price": 120.97,
-    "publishTime": "2025-03-07T07:26:30.956Z",
-    "trendChart": "https://example.com/charts/601229.png"
+    "area": "中国",
+    "industry": "银行",
+    "exchange": "SSE",
+    "list_date": "2016-11-16"
   },
   {
     "id": "002271",
-    "code": "002271",
+    "symbol": "002271",
     "name": "东方雨虹",
-    "prediction": -0.06,
-    "price": 86.37,
-    "publishTime": "2025-03-08T06:01:18.956Z",
-    "trendChart": "https://example.com/charts/002271.png"
+    "area": "中国",
+    "industry": "建材",
+    "exchange": "SZSE",
+    "list_date": "2008-09-25"
   },
   {
     "id": "603986",
-    "code": "603986",
+    "symbol": "603986",
     "name": "兆易创新",
-    "prediction": 0.7,
-    "price": 177.97,
-    "publishTime": "2025-03-06T02:57:19.956Z",
-    "trendChart": "https://example.com/charts/603986.png"
+    "area": "中国",
+    "industry": "半导体",
+    "exchange": "SSE",
+    "list_date": "2016-08-18"
   },
   {
     "id": "601117",
-    "code": "601117",
+    "symbol": "601117",
     "name": "中国化学",
-    "prediction": 0.77,
-    "price": 136.41,
-    "publishTime": "2025-03-08T08:56:20.956Z",
-    "trendChart": "https://example.com/charts/601117.png"
+    "area": "中国",
+    "industry": "建筑",
+    "exchange": "SSE",
+    "list_date": "2010-01-14"
   },
   {
     "id": "002142",
-    "code": "002142",
+    "symbol": "002142",
     "name": "宁波银行",
-    "prediction": -0.74,
-    "price": 161.7,
-    "publishTime": "2025-03-06T03:39:42.956Z",
-    "trendChart": "https://example.com/charts/002142.png"
+    "area": "中国",
+    "industry": "银行",
+    "exchange": "SZSE",
+    "list_date": "2007-07-19"
   },
   {
     "id": "600754",
-    "code": "600754",
+    "symbol": "600754",
     "name": "锦江酒店",
-    "prediction": -0.93,
-    "price": 101.65,
-    "publishTime": "2025-03-08T08:14:03.956Z",
-    "trendChart": "https://example.com/charts/600754.png"
+    "area": "中国",
+    "industry": "酒店",
+    "exchange": "SSE",
+    "list_date": "1996-01-11"
   },
   {
     "id": "601111",
-    "code": "601111",
+    "symbol": "601111",
     "name": "中国国航",
-    "prediction": -0.06,
-    "price": 60.98,
-    "publishTime": "2025-03-06T08:27:52.956Z",
-    "trendChart": "https://example.com/charts/601111.png"
+    "area": "中国",
+    "industry": "航空",
+    "exchange": "SSE",
+    "list_date": "2006-12-18"
   },
   {
     "id": "600600",
-    "code": "600600",
+    "symbol": "600600",
     "name": "青岛啤酒",
-    "prediction": -0.64,
-    "price": 176.04,
-    "publishTime": "2025-03-08T04:38:46.956Z",
-    "trendChart": "https://example.com/charts/600600.png"
+    "area": "中国",
+    "industry": "酒类",
+    "exchange": "SSE",
+    "list_date": "1993-08-27"
   },
   {
     "id": "600487",
-    "code": "600487",
+    "symbol": "600487",
     "name": "亨通光电",
-    "prediction": 0.69,
-    "price": 137.08,
-    "publishTime": "2025-03-08T01:02:59.956Z",
-    "trendChart": "https://example.com/charts/600487.png"
+    "area": "中国",
+    "industry": "通信设备",
+    "exchange": "SSE",
+    "list_date": "2003-09-24"
   },
   {
     "id": "000776",
-    "code": "000776",
+    "symbol": "000776",
     "name": "广发证券",
-    "prediction": 0.14,
-    "price": 71.77,
-    "publishTime": "2025-03-06T04:47:47.956Z",
-    "trendChart": "https://example.com/charts/000776.png"
+    "area": "中国",
+    "industry": "证券",
+    "exchange": "SZSE",
+    "list_date": "1997-04-09"
   },
   {
     "id": "600999",
-    "code": "600999",
+    "symbol": "600999",
     "name": "招商证券",
-    "prediction": 0.15,
-    "price": 106.57,
-    "publishTime": "2025-03-07T04:27:45.956Z",
-    "trendChart": "https://example.com/charts/600999.png"
+    "area": "中国",
+    "industry": "证券",
+    "exchange": "SSE",
+    "list_date": "2009-11-17"
   },
   {
     "id": "600196",
-    "code": "600196",
+    "symbol": "600196",
     "name": "复星医药",
-    "prediction": 0.46,
-    "price": 69.19,
-    "publishTime": "2025-03-09T02:02:45.956Z",
-    "trendChart": "https://example.com/charts/600196.png"
+    "area": "中国",
+    "industry": "医药",
+    "exchange": "SSE",
+    "list_date": "1998-08-07"
   },
   {
     "id": "600011",
-    "code": "600011",
+    "symbol": "600011",
     "name": "华能国际",
-    "prediction": 0.88,
-    "price": 152.63,
-    "publishTime": "2025-03-07T02:59:51.956Z",
-    "trendChart": "https://example.com/charts/600011.png"
+    "area": "中国",
+    "industry": "电力",
+    "exchange": "SSE",
+    "list_date": "2001-12-06"
   },
   {
     "id": "601688",
-    "code": "601688",
+    "symbol": "601688",
     "name": "华泰证券",
-    "prediction": -0.34,
-    "price": 115.46,
-    "publishTime": "2025-03-05T01:18:48.956Z",
-    "trendChart": "https://example.com/charts/601688.png"
+    "area": "中国",
+    "industry": "证券",
+    "exchange": "SSE",
+    "list_date": "2010-02-26"
   },
   {
     "id": "002230",
-    "code": "002230",
+    "symbol": "002230",
     "name": "科大讯飞",
-    "prediction": -0.56,
-    "price": 67.55,
-    "publishTime": "2025-03-04T02:13:14.956Z",
-    "trendChart": "https://example.com/charts/002230.png"
+    "area": "中国",
+    "industry": "软件",
+    "exchange": "SZSE",
+    "list_date": "2008-05-12"
   },
   {
     "id": "600900",
-    "code": "600900",
+    "symbol": "600900",
     "name": "长江电力",
-    "prediction": -0.25,
-    "price": 152.86,
-    "publishTime": "2025-03-04T03:00:38.956Z",
-    "trendChart": "https://example.com/charts/600900.png"
+    "area": "中国",
+    "industry": "电力",
+    "exchange": "SSE",
+    "list_date": "2003-11-18"
   },
   {
     "id": "000063",
-    "code": "000063",
+    "symbol": "000063",
     "name": "中兴通讯",
-    "prediction": -0.85,
-    "price": 102.7,
-    "publishTime": "2025-03-08T05:36:34.956Z",
-    "trendChart": "https://example.com/charts/000063.png"
+    "area": "中国",
+    "industry": "通信设备",
+    "exchange": "SZSE",
+    "list_date": "1997-11-18"
   },
   {
     "id": "000895",
-    "code": "000895",
+    "symbol": "000895",
     "name": "双汇发展",
-    "prediction": 0.99,
-    "price": 198.54,
-    "publishTime": "2025-03-06T06:57:29.956Z",
-    "trendChart": "https://example.com/charts/000895.png"
+    "area": "中国",
+    "industry": "食品加工",
+    "exchange": "SZSE",
+    "list_date": "1998-12-10"
   },
   {
     "id": "600115",
-    "code": "600115",
+    "symbol": "600115",
     "name": "东方航空",
-    "prediction": 0.13,
-    "price": 195.97,
-    "publishTime": "2025-03-05T03:01:17.956Z",
-    "trendChart": "https://example.com/charts/600115.png"
+    "area": "中国",
+    "industry": "航空",
+    "exchange": "SSE",
+    "list_date": "1997-11-05"
   },
   {
     "id": "600893",
-    "code": "600893",
+    "symbol": "600893",
     "name": "航发动力",
-    "prediction": 0.32,
-    "price": 114.9,
-    "publishTime": "2025-03-08T01:14:36.956Z",
-    "trendChart": "https://example.com/charts/600893.png"
+    "area": "中国",
+    "industry": "航空",
+    "exchange": "SSE",
+    "list_date": "1998-06-03"
   },
   {
     "id": "601211",
-    "code": "601211",
+    "symbol": "601211",
     "name": "国泰君安",
-    "prediction": -0.22,
-    "price": 98.27,
-    "publishTime": "2025-03-09T05:22:34.956Z",
-    "trendChart": "https://example.com/charts/601211.png"
+    "area": "中国",
+    "industry": "证券",
+    "exchange": "SSE",
+    "list_date": "2015-06-26"
   },
   {
     "id": "601066",
-    "code": "601066",
+    "symbol": "601066",
     "name": "中信建投",
-    "prediction": 0.25,
-    "price": 55.07,
-    "publishTime": "2025-03-08T02:23:56.956Z",
-    "trendChart": "https://example.com/charts/601066.png"
+    "area": "中国",
+    "industry": "证券",
+    "exchange": "SSE",
+    "list_date": "2018-06-20"
   },
   {
     "id": "600837",
-    "code": "600837",
+    "symbol": "600837",
     "name": "海通证券",
-    "prediction": -0.57,
-    "price": 178.46,
-    "publishTime": "2025-03-08T02:22:45.956Z",
-    "trendChart": "https://example.com/charts/600837.png"
+    "area": "中国",
+    "industry": "证券",
+    "exchange": "SSE",
+    "list_date": "1994-02-24"
   },
   {
     "id": "603288",
-    "code": "603288",
+    "symbol": "603288",
     "name": "海天味业",
-    "prediction": 0.83,
-    "price": 193.51,
-    "publishTime": "2025-03-07T04:38:33.956Z",
-    "trendChart": "https://example.com/charts/603288.png"
+    "area": "中国",
+    "industry": "食品",
+    "exchange": "SSE",
+    "list_date": "2014-02-11"
   },
   {
     "id": "002202",
-    "code": "002202",
+    "symbol": "002202",
     "name": "金风科技",
-    "prediction": 0.58,
-    "price": 118.93,
-    "publishTime": "2025-03-04T03:04:30.956Z",
-    "trendChart": "https://example.com/charts/002202.png"
+    "area": "中国",
+    "industry": "电气设备",
+    "exchange": "SZSE",
+    "list_date": "2007-12-26"
   },
   {
     "id": "600436",
-    "code": "600436",
+    "symbol": "600436",
     "name": "片仔癀",
-    "prediction": 0.81,
-    "price": 182.44,
-    "publishTime": "2025-03-10T06:30:51.956Z",
-    "trendChart": "https://example.com/charts/600436.png"
+    "area": "中国",
+    "industry": "中药",
+    "exchange": "SSE",
+    "list_date": "2003-06-16"
   },
   {
     "id": "601225",
-    "code": "601225",
+    "symbol": "601225",
     "name": "陕西煤业",
-    "prediction": -0.79,
-    "price": 125.16,
-    "publishTime": "2025-03-08T03:20:28.956Z",
-    "trendChart": "https://example.com/charts/601225.png"
+    "area": "中国",
+    "industry": "煤炭",
+    "exchange": "SSE",
+    "list_date": "2014-01-28"
   },
   {
     "id": "601865",
-    "code": "601865",
+    "symbol": "601865",
     "name": "福莱特",
-    "prediction": -0.06,
-    "price": 136.28,
-    "publishTime": "2025-03-05T04:54:12.956Z",
-    "trendChart": "https://example.com/charts/601865.png"
+    "area": "中国",
+    "industry": "玻璃",
+    "exchange": "SSE",
+    "list_date": "2019-02-15"
   },
   {
     "id": "002841",
-    "code": "002841",
+    "symbol": "002841",
     "name": "视源股份",
-    "prediction": 0.73,
-    "price": 124.98,
-    "publishTime": "2025-03-06T04:07:38.956Z",
-    "trendChart": "https://example.com/charts/002841.png"
+    "area": "中国",
+    "industry": "电子",
+    "exchange": "SZSE",
+    "list_date": "2017-01-19"
   },
   {
     "id": "603899",
-    "code": "603899",
+    "symbol": "603899",
     "name": "晨光文具",
-    "prediction": 0.8,
-    "price": 173.12,
-    "publishTime": "2025-03-04T01:16:36.956Z",
-    "trendChart": "https://example.com/charts/603899.png"
+    "area": "中国",
+    "industry": "文具",
+    "exchange": "SSE",
+    "list_date": "2015-01-27"
   }
 ]

@@ -54,7 +54,7 @@ router.get('/', verifyToken, async (req, res) => {
 router.get('/:id', verifyToken, async (req, res) => {
     try {
         const products = await productDb.read();
-        const product = products.find(p => p.id === req.params.id);
+        const product = products.find(p => p.id === req.params.id || p.symbol === req.params.id);
 
         if (!product) {
             return res.status(404).json({
@@ -79,21 +79,24 @@ router.get('/:id', verifyToken, async (req, res) => {
 // 创建新产品（仅 admin 和 user 可访问）
 router.post('/', verifyToken, checkRole(['admin', 'user']), async (req, res) => {
     try {
-        const {name, description, price} = req.body;
+        const {symbol, name, area, industry, exchange, list_date} = req.body;
 
-        if (!name || !price) {
+        if (!symbol || !name) {
             return res.status(400).json({
                 success: false,
-                message: '产品名称和价格为必填项'
+                message: '产品代码和名称为必填项'
             });
         }
 
         const products = await productDb.read();
         const newProduct = {
             id: Date.now().toString(),
+            symbol,
             name,
-            description,
-            price,
+            area: area || '',
+            industry: industry || '',
+            exchange: exchange || '',
+            list_date: list_date || new Date().toISOString().split('T')[0],
             created_by: req.user.username,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
@@ -120,7 +123,7 @@ router.post('/', verifyToken, checkRole(['admin', 'user']), async (req, res) => 
 router.put('/:id', verifyToken, async (req, res) => {
     try {
         const products = await productDb.read();
-        const productIndex = products.findIndex(p => p.id === req.params.id);
+        const productIndex = products.findIndex(p => p.id === req.params.id || p.symbol === req.params.id);
 
         if (productIndex === -1) {
             return res.status(404).json({
@@ -137,12 +140,15 @@ router.put('/:id', verifyToken, async (req, res) => {
             });
         }
 
-        const {name, description, price} = req.body;
+        const {symbol, name, area, industry, exchange, list_date} = req.body;
         const updatedProduct = {
             ...products[productIndex],
+            symbol: symbol || products[productIndex].symbol,
             name: name || products[productIndex].name,
-            description: description || products[productIndex].description,
-            price: price || products[productIndex].price,
+            area: area || products[productIndex].area,
+            industry: industry || products[productIndex].industry,
+            exchange: exchange || products[productIndex].exchange,
+            list_date: list_date || products[productIndex].list_date,
             updated_at: new Date().toISOString()
         };
 
@@ -167,7 +173,7 @@ router.put('/:id', verifyToken, async (req, res) => {
 router.delete('/:id', verifyToken, checkRole(['admin']), async (req, res) => {
     try {
         const products = await productDb.read();
-        const productIndex = products.findIndex(p => p.id === req.params.id);
+        const productIndex = products.findIndex(p => p.id === req.params.id || p.symbol === req.params.id);
 
         if (productIndex === -1) {
             return res.status(404).json({
