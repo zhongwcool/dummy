@@ -36,7 +36,7 @@ router.get('/', verifyToken, async (req, res) => {
         const formattedProducts = paginatedProducts.map(product => {
             return {
                 trade_date: currentDate,
-                prediction: Math.random() > 0.5 ? 1 : -1, // 模拟预测值
+                prediction: +(Math.random() * 2 - 1).toFixed(4), // 模拟预测值
                 price: +(50 + Math.random() * 150).toFixed(2), // 模拟价格
                 stock_id: product.id,
                 symbol: product.symbol,
