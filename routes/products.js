@@ -73,10 +73,8 @@ router.get('/:id', verifyToken, async (req, res) => {
             });
         }
 
-        res.json({
-            success: true,
-            product: product
-        });
+        // 直接返回产品数据
+        res.json(product);
     } catch (error) {
         console.error('Error getting product:', error);
         res.status(500).json({
