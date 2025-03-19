@@ -9,37 +9,47 @@ router.get('/', verifyToken, async (req, res) => {
     try {
         const products = await productDb.read();
 
-        // 检查是否有分页参数
-        const page = req.query.page;
-        const pageSize = req.query.pageSize;
+        // 获取查询参数
+        const page = req.query.page !== undefined ? parseInt(req.query.page) : undefined;
+        const size = req.query.size !== undefined ? parseInt(req.query.size) : undefined;
 
-        // 如果没有分页参数，返回全部数据
-        if (!page && !pageSize) {
-            return res.json({
-                success: true,
-                total: products.length,
-                products: products
-            });
+        let paginatedProducts = [];
+
+        // 参数为空，返回全部数据
+        if (page === undefined && size === undefined) {
+            paginatedProducts = products;
+        }
+        // 参数合法，返回分页数据
+        else if (!isNaN(page) && page > 0 && !isNaN(size) && size > 0) {
+            // 计算分页
+            const startIndex = (page - 1) * size;
+            const endIndex = startIndex + size;
+            paginatedProducts = products.slice(startIndex, endIndex);
+        }
+        // 参数非法，返回空表
+        else {
+            paginatedProducts = [];
         }
 
-        // 有分页参数时，返回分页数据
-        const currentPage = parseInt(page) || 1;
-        const itemsPerPage = parseInt(pageSize) || 10;
-
-        // 计算分页
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        const paginatedProducts = products.slice(startIndex, endIndex);
+        // 构造符合新格式的返回数据
+        const currentDate = new Date().toISOString().split('T')[0];
+        const formattedProducts = paginatedProducts.map(product => {
+            return {
+                trade_date: currentDate,
+                prediction: Math.random() > 0.5 ? 1 : -1, // 模拟预测值
+                price: +(50 + Math.random() * 150).toFixed(2), // 模拟价格
+                stock_id: product.id,
+                symbol: product.symbol,
+                name: product.name
+            };
+        });
 
         res.json({
-            success: true,
-            pagination: {
-                total: products.length,
-                page: currentPage,
-                pageSize: itemsPerPage,
-                totalPages: Math.ceil(products.length / itemsPerPage)
-            },
-            products: paginatedProducts
+            items: formattedProducts,
+            total: products.length,
+            page: !isNaN(page) ? page : 1,
+            size: !isNaN(size) ? size : formattedProducts.length,
+            pages: !isNaN(size) && size > 0 ? Math.ceil(products.length / size) : 1
         });
     } catch (error) {
         console.error('Error getting products:', error);
