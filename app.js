@@ -81,6 +81,7 @@ const userRouter = require('./routes/users');
 const productRouter = require('./routes/products');
 const authRouter = require('./routes/auth');
 const updateRouter = require('./routes/update');
+const stocksRouter = require('./routes/stocks');
 
 // 基础路由
 app.get('/', (req, res) => {
@@ -89,6 +90,7 @@ app.get('/', (req, res) => {
         endpoints: {
             users: '/api/users',
             products: '/api/products',
+            stocks: '/api/stocks',
             auth: '/api/auth',
             update: '/api/update'
         }
@@ -98,6 +100,7 @@ app.get('/', (req, res) => {
 // 使用路由模块
 app.use('/api/users', userRouter);
 app.use('/api/products', productRouter);
+app.use('/api/stocks', stocksRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/update', updateRouter);
 
