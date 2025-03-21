@@ -3,10 +3,28 @@ const router = express.Router();
 const {verifyToken} = require('../middleware/auth');
 const {productDb} = require('../utils/fileHandler');
 
+/**
+ * 读取所有股票数据
+ * @returns {Promise<Array>} 股票数据数组
+ */
+async function getAllStocks() {
+    return await productDb.read();
+}
+
+/**
+ * 根据ID或符号查找特定股票
+ * @param {string} identifier 股票ID或符号
+ * @returns {Promise<Object|null>} 找到的股票对象或null
+ */
+async function findStockByIdOrSymbol(identifier) {
+    const stocks = await getAllStocks();
+    return stocks.find(p => p.id === identifier || p.symbol === identifier);
+}
+
 // 获取股票列表（所有已认证用户可访问）
 router.get('/', verifyToken, async (req, res) => {
     try {
-        const stocks = await productDb.read();
+        const stocks = await getAllStocks();
 
         // 获取查询参数
         const page = req.query.page !== undefined ? parseInt(req.query.page) : undefined;
@@ -62,8 +80,7 @@ router.get('/', verifyToken, async (req, res) => {
 // 获取单个股票（所有已认证用户可访问）
 router.get('/:id', verifyToken, async (req, res) => {
     try {
-        const stocks = await productDb.read();
-        const stock = stocks.find(p => p.id === req.params.id || p.symbol === req.params.id);
+        const stock = await findStockByIdOrSymbol(req.params.id);
 
         if (!stock) {
             return res.status(404).json({
@@ -93,8 +110,7 @@ router.get('/:id', verifyToken, async (req, res) => {
 // 获取股票预测数据（所有已认证用户可访问）
 router.get('/:id/predictions', verifyToken, async (req, res) => {
     try {
-        const stocks = await productDb.read();
-        const stock = stocks.find(p => p.id === req.params.id || p.symbol === req.params.id);
+        const stock = await findStockByIdOrSymbol(req.params.id);
 
         if (!stock) {
             return res.status(404).json({
@@ -162,8 +178,7 @@ router.get('/:id/predictions', verifyToken, async (req, res) => {
 // 获取股票日常基础数据（所有已认证用户可访问）
 router.get('/:id/daily-basics', verifyToken, async (req, res) => {
     try {
-        const stocks = await productDb.read();
-        const stock = stocks.find(p => p.id === req.params.id || p.symbol === req.params.id);
+        const stock = await findStockByIdOrSymbol(req.params.id);
 
         if (!stock) {
             return res.status(404).json({
@@ -191,8 +206,7 @@ router.get('/:id/daily-basics', verifyToken, async (req, res) => {
         }
         // 参数合法，返回分页数据
         else if (!isNaN(page) && page > 0 && !isNaN(size) && size > 0) {
-            // 限制每页大小在1到50之间
-            limitedSize = Math.min(Math.max(size, 1), 50);
+            limitedSize = Math.max(size, 1);
 
             // 计算总页数
             totalPages = Math.ceil(allBasicsData.length / limitedSize);
@@ -231,8 +245,7 @@ router.get('/:id/daily-basics', verifyToken, async (req, res) => {
 // 获取股票日常技术因子（所有已认证用户可访问）
 router.get('/:id/daily-technical-factors', verifyToken, async (req, res) => {
     try {
-        const stocks = await productDb.read();
-        const stock = stocks.find(p => p.id === req.params.id || p.symbol === req.params.id);
+        const stock = await findStockByIdOrSymbol(req.params.id);
 
         if (!stock) {
             return res.status(404).json({
@@ -245,8 +258,8 @@ router.get('/:id/daily-technical-factors', verifyToken, async (req, res) => {
         const page = req.query.page !== undefined ? parseInt(req.query.page) : undefined;
         const size = req.query.size !== undefined ? parseInt(req.query.size) : undefined;
 
-        // 生成最多50天的股票技术因子数据
-        const allTechnicalFactors = generateTechnicalFactorsForStock(stock, 50);
+        // 生成最多200天的股票技术因子数据
+        const allTechnicalFactors = generateTechnicalFactorsForStock(stock, 200);
 
         let pageTechnicalFactors = [];
         let validPage = 1;
@@ -260,8 +273,7 @@ router.get('/:id/daily-technical-factors', verifyToken, async (req, res) => {
         }
         // 参数合法，返回分页数据
         else if (!isNaN(page) && page > 0 && !isNaN(size) && size > 0) {
-            // 限制每页大小在1到50之间
-            limitedSize = Math.min(Math.max(size, 1), 50);
+            limitedSize = Math.max(size, 1);
 
             // 计算总页数
             totalPages = Math.ceil(allTechnicalFactors.length / limitedSize);
