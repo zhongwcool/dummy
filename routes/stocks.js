@@ -176,8 +176,8 @@ router.get('/:id/daily-basics', verifyToken, async (req, res) => {
         const page = req.query.page !== undefined ? parseInt(req.query.page) : undefined;
         const size = req.query.size !== undefined ? parseInt(req.query.size) : undefined;
 
-        // 生成最多50天的股票日常基础数据
-        const allBasicsData = generateDailyBasicsForStock(stock, 50);
+        // 生成最多200天的股票日常基础数据
+        const allBasicsData = generateDailyBasicsForStock(stock, 200);
 
         let pageBasicsData = [];
         let validPage = 1;
