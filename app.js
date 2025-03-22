@@ -12,11 +12,8 @@ const NODE_ENV = process.env.NODE_ENV || 'production';
 
 // 日志工具函数
 function print(message) {
-    // 只在开发环境打印非错误日志
-    if (NODE_ENV === 'development') {
-        const timestamp = new Date().toISOString();
-        console.log(`[${timestamp}] ${message}`);
-    }
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] ${message}`);
 }
 
 // Function to get the local IP address
@@ -52,7 +49,7 @@ function getLocalIPAddress() {
     print('可用的局域网IP地址:');
     candidates.forEach(c => print(`${c.name}: ${c.address} (优先级:${c.priority})`));
 
-    return candidates.length > 0 ? candidates[0].address : '127.0.0.1';
+    return candidates;
 }
 
 // Function to get the external IP address
@@ -71,6 +68,7 @@ function getExternalIPAddress(callback) {
                 const response = JSON.parse(data);
                 const ip = response.origin;
                 if (isIp(ip)) {
+                    print(`获取到的外网IP地址: ${ip}`);
                     callback(ip);
                 } else {
                     console.error('Invalid IP address received:', ip);
@@ -137,9 +135,11 @@ app.use((err, req, res, next) => {
 
 // 启动服务器
 app.listen(PORT, () => {
-    const localIPAddress = getLocalIPAddress();
+    const localIPs = getLocalIPAddress();
     getExternalIPAddress((ipAddress) => {
         console.log(`Server running on http://${ipAddress}:${PORT}`);
-        console.log(`Server running on http://${localIPAddress}:${PORT}`);
+        localIPs.forEach(ip => {
+            console.log(`Server running on http://${ip.address}:${PORT}`);
+        });
     });
 });
