@@ -324,25 +324,52 @@ function generatePredictionsForStock(stock, days) {
     const prng = getPseudoRandomGenerator(seed);
 
     // 初始价格和预测值
-    let lastPrice = 50 + prng() * 150;
-    let lastPrediction = prng() * 2 - 1;
+    let lastPrices = [50 + prng() * 150]; // 存储最近3天的价格
+    let lastPredictions = [prng() * 2 - 1]; // 存储最近3天的预测值
+
+    // 趋势相关变量
+    let currentTrend = Math.sign(lastPredictions[0]); // 当前趋势方向（1为正，-1为负）
+    let trendDuration = 1; // 当前趋势持续天数
+    let nextTrendDuration = Math.floor(prng() * 4) + 2; // 下一个趋势的持续时间（2-5天）
 
     for (let i = 0; i < days; i++) {
         const date = new Date(currentDate);
         date.setDate(date.getDate() - i);
 
-        // 根据上一天的价格生成今天的价格，保持连续性
-        // 价格波动范围为前一天的 ±5%
-        const priceChange = (prng() * 0.1 - 0.05) * lastPrice;
-        const price = Math.max(1, lastPrice + priceChange);
-        lastPrice = price;
+        // 根据最近2-3天的价格生成今天的价格
+        // 价格波动范围为最近价格的 ±5%
+        const recentPrice = lastPrices[0]; // 使用最近一天的价格
+        const priceChange = (prng() * 0.1 - 0.05) * recentPrice;
+        const price = Math.max(1, recentPrice + priceChange);
 
-        // 预测值在 -1 到 1 之间波动，与前一天有一定关联
+        // 更新价格历史
+        lastPrices.unshift(price);
+        if (lastPrices.length > 3) lastPrices.pop();
+
+        // 预测值在 -1 到 1 之间波动，与最近2-3天有一定关联
+        const recentPrediction = lastPredictions[0]; // 使用最近一天的预测值
         const predictionChange = prng() * 0.4 - 0.2;
-        let prediction = lastPrediction + predictionChange;
+        let prediction = recentPrediction + predictionChange;
+
+        // 检查是否需要切换趋势
+        trendDuration++;
+        if (trendDuration >= nextTrendDuration) {
+            currentTrend = -currentTrend; // 切换趋势方向
+            trendDuration = 0;
+            nextTrendDuration = Math.floor(prng() * 4) + 2; // 生成新的趋势持续时间
+        }
+
+        // 确保预测值符合当前趋势
+        if (Math.sign(prediction) !== currentTrend) {
+            prediction = -prediction;
+        }
+        
         // 确保预测值在 -1 到 1 之间
         prediction = Math.max(-1, Math.min(1, prediction));
-        lastPrediction = prediction;
+
+        // 更新预测值历史
+        lastPredictions.unshift(prediction);
+        if (lastPredictions.length > 3) lastPredictions.pop();
 
         predictions.push({
             trade_date: date.toISOString().split('T')[0],
