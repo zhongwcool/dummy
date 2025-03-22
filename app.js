@@ -70,7 +70,9 @@ function getExternalIPAddress(callback) {
                 const response = JSON.parse(data);
                 const ip = response.origin;
                 if (isIp(ip)) {
-                    print(`获取到的外网IP地址: ${ip}`);
+                    if (NODE_ENV === 'development') {
+                        print(`获取到的外网IP地址: ${ip}`);
+                    }
                     callback(ip);
                 } else {
                     console.error('Invalid IP address received:', ip);
