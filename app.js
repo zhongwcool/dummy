@@ -1,3 +1,4 @@
+require('dotenv').config();
 const os = require('os');
 const http = require('http');
 const express = require('express');
@@ -9,12 +10,6 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 // 获取当前环境，如果未设置则默认为开发环境
 const NODE_ENV = process.env.NODE_ENV || 'production';
-
-// 日志工具函数
-function print(message) {
-    const timestamp = new Date().toISOString();
-    console.log(`[${timestamp}] ${message}`);
-}
 
 // Function to get the local IP address
 function getLocalIPAddress() {
@@ -47,8 +42,8 @@ function getLocalIPAddress() {
 
     // 只在开发环境输出详细地址信息
     if (NODE_ENV === 'development') {
-        print('可用的局域网IP地址:');
-        candidates.forEach(c => print(`${c.name}: ${c.address} (优先级:${c.priority})`));
+        console.log('可用的局域网IP地址:');
+        candidates.forEach(c => console.log(`${c.name}: ${c.address} (优先级:${c.priority})`));
     }
 
     return candidates;
@@ -71,7 +66,7 @@ function getExternalIPAddress(callback) {
                 const ip = response.origin;
                 if (isIp(ip)) {
                     if (NODE_ENV === 'development') {
-                        print(`获取到的外网IP地址: ${ip}`);
+                        console.log(`获取到的外网IP地址: ${ip}`);
                     }
                     callback(ip);
                 } else {
