@@ -45,9 +45,11 @@ function getLocalIPAddress() {
     // 按优先级排序
     candidates.sort((a, b) => b.priority - a.priority);
 
-    // 输出所有找到的地址便于调试
-    print('可用的局域网IP地址:');
-    candidates.forEach(c => print(`${c.name}: ${c.address} (优先级:${c.priority})`));
+    // 只在开发环境输出详细地址信息
+    if (NODE_ENV === 'development') {
+        print('可用的局域网IP地址:');
+        candidates.forEach(c => print(`${c.name}: ${c.address} (优先级:${c.priority})`));
+    }
 
     return candidates;
 }
