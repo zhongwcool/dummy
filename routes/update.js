@@ -3,7 +3,11 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 const upload = require('../middleware/fileUpload');
-const ApkReader = require('adbkit-apkreader');
+const ApkReader = require('node-apk-parser');
+
+// 警告：node-apk-parser 依赖了不安全的 debug 版本
+// 建议在生产环境中使用手动输入版本信息的方式
+// TODO: 考虑使用其他 APK 解析方案或手动输入版本信息
 
 // 读取应用版本数据
 const appVersionsPath = path.join(__dirname, '../data/appVersions.json');
@@ -32,10 +36,8 @@ const saveAppVersions = (data) => {
 const readApkInfo = async (filePath) => {
     try {
         console.log(`尝试读取APK文件: ${filePath}`);
-        const reader = await ApkReader.open(filePath);
-        console.log('成功打开APK文件');
-
-        const manifest = await reader.readManifest();
+        const reader = ApkReader.readFile(filePath);
+        const manifest = reader.readManifestSync();
         console.log('成功读取AndroidManifest.xml');
         console.log('清单内容:', JSON.stringify(manifest, null, 2));
 
@@ -235,23 +237,23 @@ router.delete('/:versionCode', (req, res) => {
     try {
         const {versionCode} = req.params;
         const appVersions = getAppVersions();
-
-        // 检查是否为最新版本
-        if (appVersions.android.latest.versionCode === parseInt(versionCode)) {
-            return res.status(400).json({error: '不能删除最新版本'});
-        }
+        const targetVersionCode = parseInt(versionCode);
 
         // 在历史记录中查找版本
-        const versionIndex = appVersions.android.history.findIndex(
-            v => v.versionCode === parseInt(versionCode)
+        const historyIndex = appVersions.android.history.findIndex(
+            v => v.versionCode === targetVersionCode
         );
 
-        if (versionIndex === -1) {
+        // 检查是否为最新版本
+        const isLatestVersion = appVersions.android.latest.versionCode === targetVersionCode;
+
+        // 如果既不在历史记录中也不是最新版本，则返回404
+        if (historyIndex === -1 && !isLatestVersion) {
             return res.status(404).json({error: '未找到指定版本'});
         }
 
-        // 获取下载URL以删除文件
-        const version = appVersions.android.history[versionIndex];
+        // 获取要删除的版本信息
+        const version = isLatestVersion ? appVersions.android.latest : appVersions.android.history[historyIndex];
         const downloadUrl = version.downloadUrl;
         const filename = downloadUrl.split('/').pop();
         const filePath = path.join(__dirname, '../public/uploads/apk', filename);
@@ -261,8 +263,20 @@ router.delete('/:versionCode', (req, res) => {
             fs.unlinkSync(filePath);
         }
 
-        // 从历史记录中删除版本
-        appVersions.android.history.splice(versionIndex, 1);
+        // 从历史记录或最新版本中删除
+        if (isLatestVersion) {
+            // 如果删除的是最新版本，从历史记录中获取最新的一个版本作为新的最新版本
+            if (appVersions.android.history.length > 0) {
+                appVersions.android.latest = appVersions.android.history[0];
+                appVersions.android.history.shift(); // 从历史记录中移除
+            } else {
+                // 如果没有历史记录，清空最新版本
+                appVersions.android.latest = {};
+            }
+        } else {
+            // 从历史记录中删除
+            appVersions.android.history.splice(historyIndex, 1);
+        }
 
         // 保存更新后的版本信息
         if (saveAppVersions(appVersions)) {

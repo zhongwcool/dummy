@@ -3,6 +3,8 @@ const http = require('http');
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const isIp = require('is-ip');
+const ipaddr = require('ipaddr.js');
 const app = express();
 const PORT = process.env.PORT || 5000;
 // 获取当前环境，如果未设置则默认为开发环境
@@ -26,12 +28,19 @@ function getLocalIPAddress() {
     for (const name of Object.keys(interfaces)) {
         for (const iface of interfaces[name]) {
             if (iface.family === 'IPv4' && !iface.internal) {
-                candidates.push({
-                    address: iface.address,
-                    name: name,
-                    // 优先选择192.168开头的地址
-                    priority: iface.address.startsWith('192.168') ? 2 : 1
-                });
+                try {
+                    const addr = ipaddr.parse(iface.address);
+                    if (addr.range() === 'private') {
+                        candidates.push({
+                            address: iface.address,
+                            name: name,
+                            // 优先选择192.168开头的地址
+                            priority: iface.address.startsWith('192.168') ? 2 : 1
+                        });
+                    }
+                } catch (e) {
+                    console.error(`Error parsing IP address ${iface.address}:`, e);
+                }
             }
         }
     }
@@ -58,8 +67,19 @@ function getExternalIPAddress(callback) {
 
         // The whole response has been received.
         resp.on('end', () => {
-            const ip = JSON.parse(data).origin;
-            callback(ip);
+            try {
+                const response = JSON.parse(data);
+                const ip = response.origin;
+                if (isIp(ip)) {
+                    callback(ip);
+                } else {
+                    console.error('Invalid IP address received:', ip);
+                    callback('127.0.0.1');
+                }
+            } catch (error) {
+                console.error('Error parsing IP response:', error);
+                callback('127.0.0.1');
+            }
         });
 
     }).on('error', (err) => {
