@@ -123,8 +123,8 @@ router.get('/:id/predictions', verifyToken, async (req, res) => {
         const page = req.query.page !== undefined ? parseInt(req.query.page) : undefined;
         const size = req.query.size !== undefined ? parseInt(req.query.size) : undefined;
 
-        // 生成最多50天的完整预测数据集
-        const allPredictions = generatePredictionsForStock(stock, 50);
+        // 生成最多200天的完整预测数据集
+        const allPredictions = generatePredictionsForStock(stock, 200);
 
         let pagePredictions = [];
         let validPage = 1;
@@ -139,7 +139,7 @@ router.get('/:id/predictions', verifyToken, async (req, res) => {
         // 参数合法，返回分页数据
         else if (!isNaN(page) && page > 0 && !isNaN(size) && size > 0) {
             // 限制每页大小在1到50之间
-            limitedSize = Math.min(Math.max(size, 1), 50);
+            limitedSize = Math.max(size, 1);
 
             // 计算总页数
             totalPages = Math.ceil(allPredictions.length / limitedSize);
