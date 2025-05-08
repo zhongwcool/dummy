@@ -70,22 +70,24 @@ router.get('/', (req, res) => {
 
 /**
  * @route   GET /api/update/check
- * @desc    根据客户端当前版本检查是否有更新
+ * @desc    根据客户端包名获取最新版本信息
  * @access  Public
  */
 router.get('/check', (req, res) => {
-    const {versionCode} = req.query;
+    const {packageName} = req.query;
     const appVersions = getAppVersions();
     const latestVersion = appVersions.android.latest;
 
-    // 检查是否需要更新
-    const clientVersionCode = parseInt(versionCode) || 0;
-    const hasUpdate = clientVersionCode < latestVersion.versionCode;
+    // 检查包名是否匹配
+    if (!packageName || packageName !== latestVersion.packageName) {
+        return res.status(400).json({
+            error: '无效的包名',
+            message: '请提供正确的应用包名'
+        });
+    }
 
-    res.json({
-        hasUpdate,
-        ...latestVersion
-    });
+    // 直接返回最新版本信息，由客户端自行判断是否需要更新
+    res.json(latestVersion);
 });
 
 /**
