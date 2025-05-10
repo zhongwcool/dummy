@@ -168,7 +168,7 @@ router.post('/upload', upload.single('apk'), async (req, res) => {
 
         // 构建下载URL
         const baseUrl = `${req.protocol}://${req.get('host')}`;
-        const downloadUrl = `${baseUrl}/uploads/apk/${filename}`;
+        const downloadUrl = `${baseUrl}/files/${filename}`;
         console.log(`下载URL: ${downloadUrl}`);
 
         // 读取当前版本信息
@@ -258,7 +258,7 @@ router.delete('/:versionCode', (req, res) => {
         const version = isLatestVersion ? appVersions.android.latest : appVersions.android.history[historyIndex];
         const downloadUrl = version.downloadUrl;
         const filename = downloadUrl.split('/').pop();
-        const filePath = path.join(__dirname, '../public/uploads/apk', filename);
+        const filePath = path.join(__dirname, '../public/files', filename);
 
         // 尝试删除文件
         if (fs.existsSync(filePath)) {

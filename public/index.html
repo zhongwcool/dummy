@@ -21,10 +21,28 @@
         .version-card {
             margin-bottom: 1rem;
             transition: all 0.3s;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
         }
 
         .version-card:hover {
             box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+
+        .card-body {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .card-content {
+            flex: 1;
+        }
+
+        .card-actions {
+            margin-top: auto;
+            padding-top: 1rem;
         }
 
         .upload-form {
@@ -166,13 +184,18 @@
                                 <span class="badge bg-primary">最新</span>
                                 ${version.forceUpdate ? '<span class="badge bg-danger">强制更新</span>' : ''}
                             </h5>
-                            <h6 class="card-subtitle mb-2 text-muted">版本号: ${version.versionCode}</h6>
-                            <p class="card-text">
-                                <small class="text-muted">上传日期: ${releaseDate}</small>
-                                ${fileSize ? `<small class="text-muted ms-2">文件大小: ${fileSize}</small>` : ''}
-                            </p>
-                            <p class="card-text">${version.updateDescription.replace(/\n/g, '<br>')}</p>
-                            <a href="${version.downloadUrl}" class="btn btn-success" download>下载APK</a>
+                            <h6 class="card-subtitle mb-2 text-muted">版本号: ${version.versionCode} | 包名: ${version.packageName}</h6>
+                            <div class="card-content">
+                                <p class="card-text">
+                                    <small class="text-muted">上传日期: ${releaseDate}</small>
+                                    ${fileSize ? `<small class="text-muted ms-2">文件大小: ${fileSize}</small>` : ''}
+                                </p>
+                                <p class="card-text">${version.updateDescription.replace(/\n/g, '<br>')}</p>
+                            </div>
+                            <div class="card-actions d-flex justify-content-between">
+                                <a href="${version.downloadUrl}" class="btn btn-success" download>下载APK</a>
+                                <button class="btn btn-outline-danger" onclick="deleteVersion(${version.versionCode})">删除</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -201,13 +224,15 @@
                                     ${version.versionName}
                                     ${version.forceUpdate ? '<span class="badge bg-danger">强制更新</span>' : ''}
                                 </h5>
-                                <h6 class="card-subtitle mb-2 text-muted">版本号: ${version.versionCode}</h6>
-                                <p class="card-text">
-                                    <small class="text-muted">发布日期: ${releaseDate}</small>
-                                    ${fileSize ? `<small class="text-muted ms-2">文件大小: ${fileSize}</small>` : ''}
-                                </p>
-                                <p class="card-text">${version.updateDescription.replace(/\n/g, '<br>')}</p>
-                                <div class="d-flex justify-content-between">
+                                <h6 class="card-subtitle mb-2 text-muted">版本号: ${version.versionCode} | 包名: ${version.packageName}</h6>
+                                <div class="card-content">
+                                    <p class="card-text">
+                                        <small class="text-muted">发布日期: ${releaseDate}</small>
+                                        ${fileSize ? `<small class="text-muted ms-2">文件大小: ${fileSize}</small>` : ''}
+                                    </p>
+                                    <p class="card-text">${version.updateDescription.replace(/\n/g, '<br>')}</p>
+                                </div>
+                                <div class="card-actions d-flex justify-content-between">
                                     <a href="${version.downloadUrl}" class="btn btn-outline-primary" download>下载APK</a>
                                     <button class="btn btn-outline-danger" onclick="deleteVersion(${version.versionCode})">删除</button>
                                 </div>

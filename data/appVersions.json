@@ -1,16 +1,27 @@
 {
   "android": {
     "latest": {
-      "versionName": "2.0",
-      "versionCode": 2,
-      "packageName": "com.js.butterknife",
-      "updateDescription": "版本管理系统",
-      "downloadUrl": "http://192.168.130.213:5000/uploads/apk/apk-1742182656198-384480030.apk",
+      "versionName": "1.5.2",
+      "versionCode": 152,
+      "packageName": "sun.jyc.cwm",
+      "updateDescription": "二哥如果",
+      "downloadUrl": "http://192.168.77.106:5000/files/apk-1746856069382-803525191.apk",
       "forceUpdate": false,
-      "fileSize": 20420948,
-      "uploadDate": "2025-03-17"
+      "fileSize": 9527839,
+      "uploadDate": "2025-05-10"
     },
     "history": [
+      {
+        "versionName": "1.5.2",
+        "versionCode": 152,
+        "packageName": "sun.jyc.cwm",
+        "updateDescription": "cascade撒",
+        "downloadUrl": "http://192.168.77.106:5000/uploads/apk/apk-1746855710194-246853333.apk",
+        "forceUpdate": false,
+        "fileSize": 9527839,
+        "uploadDate": "2025-05-10",
+        "releaseDate": "2025-05-10"
+      },
       {
         "versionName": "1.0.1",
         "versionCode": 2,
@@ -18,7 +29,7 @@
         "updateDescription": "1. 修复已知问题\n2. 优化用户体验\n3. 新增功能",
         "downloadUrl": "https://example.com/downloads/app-update.apk",
         "forceUpdate": false,
-        "releaseDate": "2025-03-17"
+        "releaseDate": "2025-05-10"
       },
       {
         "versionName": "1.0.0",

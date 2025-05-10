@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 
 // 确保上传目录存在
-const uploadDir = path.join(__dirname, '../public/uploads/apk');
+const uploadDir = path.join(__dirname, '../public/files');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, {recursive: true});
 }
