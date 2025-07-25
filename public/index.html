@@ -70,6 +70,15 @@
             width: 3rem;
             height: 3rem;
         }
+
+        .md5-hash {
+            font-family: 'Courier New', monospace;
+            background-color: #f8f9fa;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            word-break: break-all;
+        }
     </style>
 </head>
 <body>
@@ -190,6 +199,7 @@
                                     <small class="text-muted">上传日期: ${releaseDate}</small>
                                     ${fileSize ? `<small class="text-muted ms-2">文件大小: ${fileSize}</small>` : ''}
                                 </p>
+                                ${version.md5 ? `<p class="card-text"><small class="text-muted">MD5: <span class="md5-hash">${version.md5.toUpperCase()}</span></small></p>` : ''}
                                 <p class="card-text">${version.updateDescription.replace(/\n/g, '<br>')}</p>
                             </div>
                             <div class="card-actions d-flex justify-content-between">
@@ -230,6 +240,7 @@
                                         <small class="text-muted">发布日期: ${releaseDate}</small>
                                         ${fileSize ? `<small class="text-muted ms-2">文件大小: ${fileSize}</small>` : ''}
                                     </p>
+                                    ${version.md5 ? `<p class="card-text"><small class="text-muted">MD5: <span class="md5-hash">${version.md5.toUpperCase()}</span></small></p>` : ''}
                                     <p class="card-text">${version.updateDescription.replace(/\n/g, '<br>')}</p>
                                 </div>
                                 <div class="card-actions d-flex justify-content-between">

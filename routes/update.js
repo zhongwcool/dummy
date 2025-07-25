@@ -2,12 +2,33 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const fs = require('fs');
+const crypto = require('crypto');
 const upload = require('../middleware/fileUpload');
 const ApkReader = require('node-apk-parser');
 
 // 警告：node-apk-parser 依赖了不安全的 debug 版本
 // 建议在生产环境中使用手动输入版本信息的方式
 // TODO: 考虑使用其他 APK 解析方案或手动输入版本信息
+
+// 计算文件MD5哈希值
+const calculateFileMD5 = (filePath) => {
+    return new Promise((resolve, reject) => {
+        const hash = crypto.createHash('md5');
+        const stream = fs.createReadStream(filePath);
+
+        stream.on('data', (data) => {
+            hash.update(data);
+        });
+
+        stream.on('end', () => {
+            resolve(hash.digest('hex').toUpperCase());
+        });
+
+        stream.on('error', (error) => {
+            reject(error);
+        });
+    });
+};
 
 // 读取应用版本数据
 const appVersionsPath = path.join(__dirname, '../data/appVersions.json');
@@ -166,6 +187,11 @@ router.post('/upload', upload.single('apk'), async (req, res) => {
             }
         }
 
+        // 计算文件MD5
+        console.log('开始计算文件MD5');
+        const fileMD5 = await calculateFileMD5(filePath);
+        console.log(`文件MD5: ${fileMD5}`);
+
         // 构建下载URL
         const baseUrl = `${req.protocol}://${req.get('host')}`;
         const downloadUrl = `${baseUrl}/files/${filename}`;
@@ -205,6 +231,7 @@ router.post('/upload', upload.single('apk'), async (req, res) => {
             downloadUrl,
             forceUpdate: forceUpdate === 'true' || forceUpdate === true,
             fileSize: size,
+            md5: fileMD5,
             uploadDate: new Date().toISOString().split('T')[0]
         };
         console.log('新版本信息:', appVersions.android.latest);
