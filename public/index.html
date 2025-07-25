@@ -261,6 +261,14 @@
         const formData = new FormData(document.getElementById('uploadForm'));
         const loading = document.getElementById('loading');
 
+        // 手动处理复选框状态，因为未勾选的复选框不会包含在FormData中
+        const forceUpdateCheckbox = document.getElementById('forceUpdate');
+        if (forceUpdateCheckbox.checked) {
+            formData.set('forceUpdate', 'true');
+        } else {
+            formData.set('forceUpdate', 'false');
+        }
+
         loading.style.display = 'flex';
 
         fetch('/api/update/upload', {

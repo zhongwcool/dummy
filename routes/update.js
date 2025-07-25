@@ -148,7 +148,7 @@ router.post('/upload', upload.single('apk'), async (req, res) => {
         // 获取请求中的更新说明和强制更新标志
         const {updateDescription, forceUpdate = false, versionName, versionCode, packageName} = req.body;
         console.log(`更新说明: ${updateDescription}`);
-        console.log(`强制更新: ${forceUpdate}`);
+        console.log(`强制更新: ${forceUpdate === 'true' || forceUpdate === true}`);
         console.log(`手动输入的版本名称: ${versionName}`);
         console.log(`手动输入的版本号: ${versionCode}`);
         console.log(`手动输入的包名: ${packageName}`);
