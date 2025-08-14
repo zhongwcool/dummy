@@ -14,10 +14,11 @@ const storage = multer.diskStorage({
         cb(null, uploadDir);
     },
     filename: function (req, file, cb) {
-        // 使用时间戳和原始文件名创建唯一文件名
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        // 保持原始文件名，添加时间戳避免冲突
+        const timestamp = Date.now();
+        const originalName = path.basename(file.originalname, path.extname(file.originalname));
         const ext = path.extname(file.originalname);
-        cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+        cb(null, originalName + '-' + timestamp + ext);
     }
 });
 
