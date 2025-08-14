@@ -254,6 +254,10 @@
     document.addEventListener('DOMContentLoaded', function () {
         // 获取版本信息
         fetchVersions();
+
+        // 检查是否允许删除（从上传页面跳转过来才允许）
+        const urlParams = new URLSearchParams(window.location.search);
+        window.allowDelete = urlParams.get('allowDelete') === 'true';
     });
 
     // 获取版本信息
@@ -304,7 +308,7 @@
                             </div>
                             <div class="card-actions d-flex justify-content-between">
                                 <a href="${version.downloadUrl}" class="btn btn-success" download>下载APK</a>
-                                <button class="btn btn-outline-danger" onclick="deleteVersion(${version.versionCode})">删除</button>
+                                ${window.allowDelete ? `<button class="btn btn-outline-danger" onclick="deleteVersion(${version.versionCode})">删除</button>` : ''}
                             </div>
                         </div>
                     </div>
@@ -347,7 +351,7 @@
                                 </div>
                                 <div class="card-actions d-flex justify-content-between">
                                     <a href="${version.downloadUrl}" class="btn btn-outline-primary" download>下载APK</a>
-                                    <button class="btn btn-outline-danger" onclick="deleteVersion(${version.versionCode})">删除</button>
+                                    ${window.allowDelete ? `<button class="btn btn-outline-danger" onclick="deleteVersion(${version.versionCode})">删除</button>` : ''}
                                 </div>
                             </div>
                         </div>

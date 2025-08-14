@@ -75,7 +75,7 @@
                     </div>
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary btn-lg">上传新版本</button>
-                        <a href="/" class="btn btn-outline-secondary">返回首页</a>
+                        <a href="/?allowDelete=true" class="btn btn-outline-secondary">返回首页</a>
                     </div>
                 </form>
             </div>
@@ -135,7 +135,7 @@
 
                 // 询问是否跳转到首页查看
                 if (confirm('上传成功！是否跳转到首页查看最新版本？')) {
-                    window.location.href = '/';
+                    window.location.href = '/?allowDelete=true';
                 }
             })
             .catch(error => {
