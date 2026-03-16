@@ -99,6 +99,7 @@ const productRouter = require('./routes/products');
 const authRouter = require('./routes/auth');
 const updateRouter = require('./routes/update');
 const stocksRouter = require('./routes/stocks');
+const imageBedRouter = require('./routes/imageBed');
 
 // 基础路由
 app.get('/', (req, res) => {
@@ -109,9 +110,14 @@ app.get('/', (req, res) => {
             products: '/api/products',
             stocks: '/api/stocks',
             auth: '/api/auth',
-            update: '/api/update'
+            update: '/api/update',
+            image: '/api/image/upload'
         }
     });
+});
+
+app.get('/image', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'image.html'));
 });
 
 // 使用路由模块
@@ -120,6 +126,7 @@ app.use('/api/products', productRouter);
 app.use('/api/stocks', stocksRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/update', updateRouter);
+app.use('/api/image', imageBedRouter);
 
 // 404 处理
 app.use((req, res) => {

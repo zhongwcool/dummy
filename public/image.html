@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简易图床</title>
+    <style>
+        :root {
+            color-scheme: light dark;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f5f7fa;
+            color: #1f2328;
+        }
+
+        .container {
+            width: 70%;
+            margin: 32px auto;
+            padding: 0;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 16px;
+        }
+
+        .panel {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        }
+
+        h1 {
+            margin-top: 0;
+            font-size: 24px;
+        }
+
+        .tip,
+        .sub-title {
+            margin: 8px 0 18px;
+            color: #57606a;
+            font-size: 14px;
+        }
+
+        .drop-zone {
+            border: 2px dashed #1f6feb;
+            border-radius: 10px;
+            min-height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 16px;
+            background: #f0f6ff;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .drop-zone.dragover {
+            background: #dbeafe;
+            border-color: #0b5fcc;
+        }
+
+        .result {
+            margin-top: 18px;
+            display: none;
+        }
+
+        .status {
+            margin-top: 12px;
+            font-size: 14px;
+        }
+
+        .status.error {
+            color: #cf222e;
+        }
+
+        .status.success {
+            color: #1a7f37;
+        }
+
+        .link-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .link-row input {
+            flex: 1;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            padding: 8px 10px;
+        }
+
+        button {
+            border: none;
+            border-radius: 6px;
+            padding: 8px 12px;
+            background: #1f6feb;
+            color: #fff;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            background: #8c959f;
+            cursor: not-allowed;
+        }
+
+        .preview {
+            margin-top: 12px;
+            max-width: 100%;
+            border-radius: 8px;
+            border: 1px solid #d0d7de;
+        }
+
+        .list-wrap {
+            max-height: 76vh;
+            overflow: auto;
+            padding-right: 6px;
+        }
+
+        .group-section {
+            margin-bottom: 14px;
+        }
+
+        .group-title {
+            font-size: 13px;
+            color: #57606a;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .group-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 10px;
+        }
+
+        .image-item {
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            background: #f0f2f5;
+            border: 1px solid #d0d7de;
+            aspect-ratio: 1 / 1;
+        }
+
+        .list-thumb {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border: none;
+            margin: 0;
+            display: block;
+        }
+
+        .image-overlay {
+            position: absolute;
+            inset: auto 0 0 0;
+            padding: 6px;
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.72));
+            color: #fff;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .image-item:hover .image-overlay {
+            opacity: 1;
+        }
+
+        .image-meta {
+            font-size: 11px;
+            line-height: 1.35;
+            margin-bottom: 6px;
+            word-break: break-word;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .item-actions button {
+            flex: 1;
+            font-size: 12px;
+            padding: 5px 6px;
+        }
+
+        .btn-muted {
+            background: #57606a;
+        }
+
+        .btn-danger {
+            background: #cf222e;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                width: auto;
+                padding: 0 16px;
+            }
+
+            .layout {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="layout">
+        <section class="panel">
+            <h1>已上传图片</h1>
+            <p class="sub-title">默认按日期分组展示，组内按上传时间倒序。</p>
+            <div class="list-wrap" id="imageList"></div>
+        </section>
+
+        <section class="panel">
+            <h1>上传图片</h1>
+            <p class="tip">拖拽图片到下方区域，或点击选择图片。支持 jpg/jpeg/png/gif/webp，单张不超过 1MB。</p>
+
+            <div class="drop-zone" id="dropZone">
+                <div id="dropText">拖拽图片到这里，或点击选择</div>
+            </div>
+            <input type="file" id="fileInput" accept="image/*" hidden>
+
+            <div class="status" id="status"></div>
+
+            <div class="result" id="result">
+                <div>图片链接：</div>
+                <div class="link-row">
+                    <input type="text" id="imageUrl" readonly>
+                    <button id="copyBtn">复制</button>
+                </div>
+                <img id="preview" class="preview" alt="上传图片预览">
+            </div>
+        </section>
+    </div>
+</div>
+
+<template id="imageItemTemplate">
+    <div class="image-item">
+        <img class="list-thumb" alt="已上传图片">
+        <div class="image-overlay">
+            <div class="image-meta"></div>
+            <div class="item-actions">
+                <button class="copy-item-link">复制</button>
+                <button class="btn-muted open-item-link">打开</button>
+                <button class="btn-danger delete-item-link">删除</button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script>
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const statusEl = document.getElementById('status');
+    const resultEl = document.getElementById('result');
+    const imageUrlInput = document.getElementById('imageUrl');
+    const previewEl = document.getElementById('preview');
+    const copyBtn = document.getElementById('copyBtn');
+    const imageList = document.getElementById('imageList');
+    const imageItemTemplate = document.getElementById('imageItemTemplate');
+
+    const MAX_SIZE = 1 * 1024 * 1024;
+
+    function formatFileSize(bytes) {
+        if (!bytes) return '0 B';
+        const units = ['B', 'KB', 'MB'];
+        let size = bytes;
+        let idx = 0;
+        while (size >= 1024 && idx < units.length - 1) {
+            size /= 1024;
+            idx += 1;
+        }
+        return `${size.toFixed(2)} ${units[idx]}`;
+    }
+
+    function formatTime(iso) {
+        const date = new Date(iso);
+        if (Number.isNaN(date.getTime())) return '-';
+        return date.toLocaleString();
+    }
+
+    function getDateKey(iso) {
+        const date = new Date(iso);
+        if (Number.isNaN(date.getTime())) return '未知日期';
+
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
+    async function copyText(text) {
+        await navigator.clipboard.writeText(text);
+    }
+
+    async function loadImages() {
+        imageList.innerHTML = '加载中...';
+        try {
+            const response = await fetch('/api/image/list');
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || '获取列表失败');
+            }
+
+            if (!data.images || data.images.length === 0) {
+                imageList.innerHTML = '<div class="image-meta">暂无图片</div>';
+                return;
+            }
+
+            imageList.innerHTML = '';
+            const groups = new Map();
+            data.images.forEach((item) => {
+                const dateKey = getDateKey(item.uploadedAt);
+                if (!groups.has(dateKey)) {
+                    groups.set(dateKey, []);
+                }
+                groups.get(dateKey).push(item);
+            });
+
+            groups.forEach((items, dateKey) => {
+                const section = document.createElement('section');
+                section.className = 'group-section';
+
+                const title = document.createElement('div');
+                title.className = 'group-title';
+                title.textContent = dateKey;
+                section.appendChild(title);
+
+                const grid = document.createElement('div');
+                grid.className = 'group-grid';
+
+                items.forEach((item) => {
+                    const node = imageItemTemplate.content.cloneNode(true);
+                    const img = node.querySelector('.list-thumb');
+                    const meta = node.querySelector('.image-meta');
+                    const copyBtn = node.querySelector('.copy-item-link');
+                    const openBtn = node.querySelector('.open-item-link');
+                    const deleteBtn = node.querySelector('.delete-item-link');
+
+                    img.src = item.url;
+                    img.title = item.filename;
+                    meta.textContent = `${formatFileSize(item.size)} | ${formatTime(item.uploadedAt)}`;
+
+                    copyBtn.addEventListener('click', async () => {
+                        try {
+                            await copyText(item.url);
+                            setStatus('链接已复制到剪贴板');
+                        } catch (error) {
+                            setStatus('复制失败，请手动复制', true);
+                        }
+                    });
+
+                    openBtn.addEventListener('click', () => {
+                        window.open(item.url, '_blank');
+                    });
+
+                    deleteBtn.addEventListener('click', async () => {
+                        if (!confirm(`确认删除图片 ${item.filename} ?`)) return;
+                        try {
+                            const deleteResponse = await fetch(`/api/image/${encodeURIComponent(item.filename)}`, {
+                                method: 'DELETE'
+                            });
+                            const deleteData = await deleteResponse.json();
+                            if (!deleteResponse.ok) {
+                                throw new Error(deleteData.error || '删除失败');
+                            }
+                            setStatus('删除成功');
+                            await loadImages();
+                        } catch (error) {
+                            setStatus(error.message || '删除失败', true);
+                        }
+                    });
+
+                    grid.appendChild(node);
+                });
+
+                section.appendChild(grid);
+                imageList.appendChild(section);
+            });
+        } catch (error) {
+            imageList.innerHTML = `<div class="status error">${error.message || '获取列表失败'}</div>`;
+        }
+    }
+
+    function setStatus(message, isError = false) {
+        statusEl.textContent = message || '';
+        statusEl.className = isError ? 'status error' : 'status success';
+    }
+
+    function validateFile(file) {
+        if (!file) {
+            setStatus('请选择图片文件', true);
+            return false;
+        }
+
+        if (!file.type.startsWith('image/')) {
+            setStatus('只能上传图片文件', true);
+            return false;
+        }
+
+        if (file.size > MAX_SIZE) {
+            setStatus('图片大小不能超过 1MB', true);
+            return false;
+        }
+
+        return true;
+    }
+
+    async function uploadFile(file) {
+        if (!validateFile(file)) return;
+
+        setStatus('上传中...');
+        resultEl.style.display = 'none';
+        copyBtn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        try {
+            const response = await fetch('/api/image/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || '上传失败');
+            }
+
+            imageUrlInput.value = data.imageUrl;
+            previewEl.src = data.imageUrl;
+            resultEl.style.display = 'block';
+            copyBtn.disabled = false;
+            setStatus('上传成功');
+            await loadImages();
+        } catch (error) {
+            setStatus(error.message || '上传失败', true);
+        }
+    }
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (event) => {
+        uploadFile(event.target.files[0]);
+        fileInput.value = '';
+    });
+
+    dropZone.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (event) => {
+        event.preventDefault();
+        dropZone.classList.remove('dragover');
+        uploadFile(event.dataTransfer.files[0]);
+    });
+
+    copyBtn.addEventListener('click', async () => {
+        if (!imageUrlInput.value) return;
+        try {
+            await copyText(imageUrlInput.value);
+            setStatus('链接已复制到剪贴板');
+        } catch (error) {
+            setStatus('复制失败，请手动复制', true);
+        }
+    });
+
+    loadImages();
+</script>
+</body>
+</html>

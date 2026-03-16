@@ -4,6 +4,17 @@
 
 Node.js + Express 实现简易测试api
 
+## 简易图床
+
+- 页面地址：`/image`（或 `/image.html`）
+- 上传接口：`POST /api/image/upload`
+- 列表接口：`GET /api/image/list`（按上传时间倒序）
+- 删除接口：`DELETE /api/image/:filename`
+- 字段名：`image`
+- 限制：仅支持 `jpg/jpeg/png/gif/webp`，且单张图片不超过 `1MB`
+- 上传成功后返回 `imageUrl`，可直接访问
+- 图片展示：左侧默认按日期分组，组内按上传时间倒序
+
 ## 运行必要条件
 
 ### 系统要求
