@@ -300,7 +300,39 @@
     }
 
     async function copyText(text) {
-        await navigator.clipboard.writeText(text);
+        if (!text) return false;
+
+        // 在 HTTPS 或 localhost 下优先使用 Clipboard API
+        if (navigator.clipboard && window.isSecureContext) {
+            try {
+                await navigator.clipboard.writeText(text);
+                return true;
+            } catch (error) {
+                // 失败时走兼容方案
+            }
+        }
+
+        // 兼容 HTTP/IP 场景：使用 execCommand 降级复制
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.setAttribute('readonly', '');
+        textArea.style.position = 'fixed';
+        textArea.style.top = '-9999px';
+        textArea.style.left = '-9999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        textArea.setSelectionRange(0, textArea.value.length);
+
+        let copied = false;
+        try {
+            copied = document.execCommand('copy');
+        } catch (error) {
+            copied = false;
+        }
+
+        document.body.removeChild(textArea);
+        return copied;
     }
 
     async function loadImages() {
@@ -353,7 +385,10 @@
 
                     copyBtn.addEventListener('click', async () => {
                         try {
-                            await copyText(item.url);
+                            const copied = await copyText(item.url);
+                            if (!copied) {
+                                throw new Error('复制失败');
+                            }
                             setStatus('链接已复制到剪贴板');
                         } catch (error) {
                             setStatus('复制失败，请手动复制', true);
@@ -472,7 +507,10 @@
     copyBtn.addEventListener('click', async () => {
         if (!imageUrlInput.value) return;
         try {
-            await copyText(imageUrlInput.value);
+            const copied = await copyText(imageUrlInput.value);
+            if (!copied) {
+                throw new Error('复制失败');
+            }
             setStatus('链接已复制到剪贴板');
         } catch (error) {
             setStatus('复制失败，请手动复制', true);

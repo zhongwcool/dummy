@@ -1,6 +1,6 @@
 require('dotenv').config();
 const os = require('os');
-const http = require('http');
+const https = require('https');
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -49,40 +49,73 @@ function getLocalIPAddress() {
     return candidates;
 }
 
-// Function to get the external IP address
-function getExternalIPAddress(callback) {
-    http.get('http://httpbin.org/ip', (resp) => {
-        let data = '';
-
-        // A chunk of data has been received.
-        resp.on('data', (chunk) => {
-            data += chunk;
-        });
-
-        // The whole response has been received.
-        resp.on('end', () => {
-            try {
-                const response = JSON.parse(data);
-                const ip = response.origin;
-                if (isIp(ip)) {
-                    if (NODE_ENV === 'development') {
-                        console.log(`获取到的外网IP地址: ${ip}`);
-                    }
-                    callback(ip);
-                } else {
-                    console.error('Invalid IP address received:', ip);
-                    callback('127.0.0.1');
-                }
-            } catch (error) {
-                console.error('Error parsing IP response:', error);
-                callback('127.0.0.1');
+function fetchText(url, timeoutMs = 5000) {
+    return new Promise((resolve, reject) => {
+        const req = https.get(url, {timeout: timeoutMs}, (resp) => {
+            if (resp.statusCode < 200 || resp.statusCode >= 300) {
+                resp.resume();
+                reject(new Error(`HTTP ${resp.statusCode}`));
+                return;
             }
+
+            let data = '';
+            resp.on('data', (chunk) => {
+                data += chunk;
+            });
+            resp.on('end', () => resolve(data.trim()));
         });
 
-    }).on('error', (err) => {
-        console.error(`Error fetching IP address:${err.message}`);
-        callback('127.0.0.1'); // Fallback to localhost if error occurs
+        req.on('timeout', () => {
+            req.destroy();
+            reject(new Error('timeout'));
+        });
+        req.on('error', reject);
     });
+}
+
+function extractIP(raw) {
+    const trimmed = raw.trim();
+    if (isIp(trimmed)) {
+        return trimmed;
+    }
+
+    const contentTypeLooksJson = trimmed.startsWith('{') || trimmed.startsWith('[');
+    if (!contentTypeLooksJson) {
+        throw new Error('non-JSON response');
+    }
+
+    const parsed = JSON.parse(trimmed);
+    const ip = parsed.ip || parsed.origin;
+    if (!ip || !isIp(ip)) {
+        throw new Error('invalid IP in JSON');
+    }
+    return ip;
+}
+
+// Function to get the external IP address
+async function getExternalIPAddress(callback) {
+    const endpoints = [
+        'https://api.ipify.org?format=json',
+        'https://api.ipify.org',
+        'https://icanhazip.com'
+    ];
+
+    for (const url of endpoints) {
+        try {
+            const ip = extractIP(await fetchText(url));
+            if (NODE_ENV === 'development') {
+                console.log(`获取到的外网IP地址: ${ip}`);
+            }
+            callback(ip);
+            return;
+        } catch (error) {
+            if (NODE_ENV === 'development') {
+                console.warn(`获取外网IP失败 (${url}): ${error.message}`);
+            }
+        }
+    }
+
+    callback('127.0.0.1');
 }
 
 // 中间件
@@ -95,10 +128,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // 导入路由
 const userRouter = require('./routes/users');
-const productRouter = require('./routes/products');
 const authRouter = require('./routes/auth');
 const updateRouter = require('./routes/update');
-const stocksRouter = require('./routes/stocks');
 const imageBedRouter = require('./routes/imageBed');
 
 // 基础路由
@@ -107,8 +138,6 @@ app.get('/', (req, res) => {
         message: 'API Server is running!',
         endpoints: {
             users: '/api/users',
-            products: '/api/products',
-            stocks: '/api/stocks',
             auth: '/api/auth',
             update: '/api/update',
             image: '/api/image/upload'
@@ -122,8 +151,6 @@ app.get('/image', (req, res) => {
 
 // 使用路由模块
 app.use('/api/users', userRouter);
-app.use('/api/products', productRouter);
-app.use('/api/stocks', stocksRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/update', updateRouter);
 app.use('/api/image', imageBedRouter);

@@ -77,38 +77,6 @@ Node.js + Express 实现简易测试api
 - PUT /api/users/:id - 更新用户信息
 - DELETE /api/users/:id - 删除用户
 
-### 产品管理
-
-- GET /api/products - 获取产品列表
-    - 不带参数：返回所有产品数据
-    - 分页参数（可选）：
-        - `page`: 页码
-        - `pageSize`: 每页数量
-    - 响应示例（无分页）：
-      ```json
-      {
-          "success": true,
-          "total": 100,
-          "products": [...]
-      }
-      ```
-    - 响应示例（带分页）：
-      ```json
-      {
-          "success": true,
-          "pagination": {
-              "total": 100,
-              "page": 1,
-              "pageSize": 10,
-              "totalPages": 10
-          },
-          "products": [...]
-      }
-      ```
-- POST /api/products - 创建新产品
-- PUT /api/products/:id - 更新产品信息
-- DELETE /api/products/:id - 删除产品
-
 ## 开发说明
 
 ### 项目结构
@@ -121,11 +89,9 @@ project/
   │   └── fileHandler.js   # 文件操作工具（JSON数据读写）
   ├── routes/
   │   ├── auth.js          # 认证路由（登录、登出、验证token）
-  │   ├── users.js         # 用户管理路由
-  │   └── products.js      # 产品管理路由
+  │   └── users.js         # 用户管理路由
   ├── data/
-  │   ├── users.json       # 用户数据
-  │   └── products.json    # 产品数据
+  │   └── users.json       # 用户数据
   ├── app.js              # 应用主入口
   ├── package.json        # 项目配置
   ├── .env               # 环境变量配置
@@ -143,11 +109,9 @@ project/
 3. **routes/** - 路由目录
     - `auth.js` - 用户认证相关接口
     - `users.js` - 用户管理相关接口
-    - `products.js` - 产品管理相关接口
 
 4. **data/** - 数据存储目录
     - `users.json` - 用户数据存储
-    - `products.json` - 产品数据存储
 
 ### 环境变量配置
 

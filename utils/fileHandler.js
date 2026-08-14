@@ -4,8 +4,7 @@ const path = require('path');
 
 // 数据文件路径
 const DATA_FILES = {
-    USERS: path.join(__dirname, '../data/users.json'),
-    PRODUCTS: path.join(__dirname, '../data/stocks.json')
+    USERS: path.join(__dirname, '../data/users.json')
 };
 
 // 读取 JSON 文件
@@ -40,14 +39,7 @@ const userDb = {
     write: async (data) => writeJsonFile(DATA_FILES.USERS, data)
 };
 
-// 产品数据操作
-const productDb = {
-    read: async () => readJsonFile(DATA_FILES.PRODUCTS, []),
-    write: async (data) => writeJsonFile(DATA_FILES.PRODUCTS, data)
-};
-
 module.exports = {
     DATA_FILES,
-    userDb,
-    productDb
+    userDb
 }; 
