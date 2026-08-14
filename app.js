@@ -123,6 +123,30 @@ app.use(cors()); // 允许所有跨域请求
 app.use(express.json()); // 解析 JSON 请求体
 app.use(express.urlencoded({extended: true})); // 解析 URL 编码的请求体
 
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+app.get('/image', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'image.html'));
+});
+
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+app.get('/admin/apk', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin-apk.html'));
+});
+
+app.get('/admin/users', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin-users.html'));
+});
+
+app.get('/admin/images', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin-images.html'));
+});
+
 // 静态文件服务
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -131,23 +155,6 @@ const userRouter = require('./routes/users');
 const authRouter = require('./routes/auth');
 const updateRouter = require('./routes/update');
 const imageBedRouter = require('./routes/imageBed');
-
-// 基础路由
-app.get('/', (req, res) => {
-    res.json({
-        message: 'API Server is running!',
-        endpoints: {
-            users: '/api/users',
-            auth: '/api/auth',
-            update: '/api/update',
-            image: '/api/image/upload'
-        }
-    });
-});
-
-app.get('/image', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'image.html'));
-});
 
 // 使用路由模块
 app.use('/api/users', userRouter);

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APK 管理</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/admin.css" rel="stylesheet">
+</head>
+<body>
+<div class="page-shell">
+<div class="admin-header">
+    <h1>APK 管理</h1>
+    <div class="admin-actions">
+        <span class="text-muted small" id="currentUser"></span>
+        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#uploadModal">上传</button>
+        <a href="/admin" class="btn btn-outline-secondary btn-sm">管理首页</a>
+        <button type="button" class="btn btn-dark btn-sm" id="logoutBtn">退出</button>
+    </div>
+</div>
+
+<div id="appGrid" class="app-grid">
+    <div class="text-center py-5">
+        <div class="spinner-border" role="status"></div>
+    </div>
+</div>
+</div>
+
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="uploadForm">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5">上传新版本</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="apkFile" class="form-label">APK 文件</label>
+                        <input type="file" class="form-control" id="apkFile" name="apk" accept=".apk" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="appName" class="form-label">应用名（可选）</label>
+                        <input type="text" class="form-control" id="appName" name="appName" placeholder="不填则使用包名最后一段">
+                    </div>
+                    <div class="mb-3">
+                        <label for="updateDescription" class="form-label">更新说明</label>
+                        <textarea class="form-control" id="updateDescription" name="updateDescription" rows="3" required></textarea>
+                    </div>
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" id="forceUpdate" name="forceUpdate">
+                        <label class="form-check-label" for="forceUpdate">强制更新</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary" id="uploadSubmitBtn">上传</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="loading" id="loading">
+    <div class="spinner-border text-light" role="status"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/admin-common.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', async function () {
+        const user = await requireAdminAuth();
+        if (!user) return;
+        fillAuthBar();
+        document.getElementById('uploadForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            uploadAPK();
+        });
+        document.getElementById('uploadModal').addEventListener('hidden.bs.modal', function () {
+            document.getElementById('uploadForm').reset();
+        });
+        fetchApps();
+    });
+
+    async function fetchApps() {
+        const grid = document.getElementById('appGrid');
+        try {
+            const data = await apiRequest('/api/update/apps');
+            renderApps(data.apps || []);
+        } catch (error) {
+            grid.innerHTML = '<div class="alert alert-danger">获取应用列表失败，请刷新重试</div>';
+        }
+    }
+
+    function renderApps(apps) {
+        const grid = document.getElementById('appGrid');
+        if (!apps.length) {
+            grid.innerHTML = '<div class="alert alert-info mb-0">暂无应用版本</div>';
+            return;
+        }
+        grid.innerHTML = apps.map(renderAppColumn).join('');
+    }
+
+    function renderAppColumn(app) {
+        const versions = [];
+        if (app.latest && app.latest.versionCode != null) {
+            versions.push(Object.assign({isLatest: true}, app.latest));
+        }
+        (app.history || []).forEach(function (item) {
+            versions.push(Object.assign({isLatest: false}, item));
+        });
+
+        const body = versions.length
+            ? versions.map(function (version) {
+                return renderVersion(app.packageName, version);
+            }).join('')
+            : '<div class="text-muted">暂无版本</div>';
+
+        return `
+            <section class="app-column">
+                <h2>${escapeHtml(app.appName || app.packageName)}</h2>
+                <div class="package-name">package name: ${escapeHtml(app.packageName)}</div>
+                ${body}
+            </section>
+        `;
+    }
+
+    function renderVersion(packageName, version) {
+        const dateLabel = version.isLatest ? '上传日期' : '发布日期';
+        const dateValue = version.uploadDate || version.releaseDate || '未知日期';
+        const fileSize = formatFileSize(version.fileSize);
+        const badges = [
+            version.isLatest ? '<span class="badge bg-primary">最新</span>' : '',
+            version.forceUpdate ? '<span class="badge bg-danger">强制更新</span>' : ''
+        ].filter(Boolean).join(' ');
+
+        return `
+            <article class="version-item">
+                <div class="version-title">${escapeHtml(version.versionName || '')} ${badges}</div>
+                <div class="version-meta">版本号: ${escapeHtml(String(version.versionCode))}</div>
+                <div class="version-meta">${dateLabel}: ${escapeHtml(dateValue)}</div>
+                ${fileSize ? `<div class="version-meta">文件大小: ${escapeHtml(fileSize)}</div>` : ''}
+                ${version.md5 ? `<div class="version-meta">MD5: <span class="md5-hash">${escapeHtml(version.md5)}</span></div>` : ''}
+                <div class="version-desc">${formatDescription(version.updateDescription)}</div>
+                <div class="version-actions">
+                    <a class="btn btn-success btn-sm" href="${escapeHtml(version.downloadUrl || '#')}" download>下载APK</a>
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteVersion('${encodeURIComponent(packageName)}', ${Number(version.versionCode)})">删除</button>
+                </div>
+            </article>
+        `;
+    }
+
+    function deleteVersion(encodedPackageName, versionCode) {
+        if (!confirm('确定要删除此版本吗？此操作不可恢复！')) return;
+        const packageName = decodeURIComponent(encodedPackageName);
+        apiRequest(`/api/update/${encodeURIComponent(packageName)}/${versionCode}`, {
+            method: 'DELETE',
+            headers: authHeaders()
+        }).then(function () {
+            alert('删除成功');
+            return fetchApps();
+        }).catch(function (error) {
+            alert(error.message || '删除失败，请重试');
+        });
+    }
+
+    function uploadAPK() {
+        const formData = new FormData(document.getElementById('uploadForm'));
+        const loading = document.getElementById('loading');
+        const submitBtn = document.getElementById('uploadSubmitBtn');
+        formData.set('forceUpdate', document.getElementById('forceUpdate').checked ? 'true' : 'false');
+        loading.style.display = 'flex';
+        submitBtn.disabled = true;
+
+        apiRequest('/api/update/upload', {
+            method: 'POST',
+            headers: authHeaders(),
+            body: formData
+        }).then(function (data) {
+            loading.style.display = 'none';
+            submitBtn.disabled = false;
+            const version = data.version || {};
+            document.getElementById('uploadForm').reset();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('uploadModal')).hide();
+            alert(`上传成功！\n应用: ${data.appName || version.packageName}\n版本: ${version.versionName}`);
+            return fetchApps();
+        }).catch(function (error) {
+            loading.style.display = 'none';
+            submitBtn.disabled = false;
+            alert(error.message || '上传失败，请重试');
+        });
+    }
+</script>
+</body>
+</html>

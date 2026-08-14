@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/admin.css" rel="stylesheet">
+</head>
+<body>
+<div id="loginPanel" class="login-shell" style="display: none;">
+    <div class="login-card">
+        <div class="card-body">
+            <div class="dashboard-kicker">Admin</div>
+            <h1 class="h4 mb-2">管理登录</h1>
+            <p class="text-muted mb-4">登录后进入控制台</p>
+            <form id="loginForm">
+                <div class="mb-3">
+                    <label for="username" class="form-label">用户名</label>
+                    <input type="text" class="form-control" id="username" name="username" autocomplete="username" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">密码</label>
+                    <input type="password" class="form-control" id="password" name="password" autocomplete="current-password" required>
+                </div>
+                <div id="loginError" class="alert alert-danger py-2" style="display: none;"></div>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary" id="loginBtn">进入系统</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="dashboardPanel" class="dashboard-shell" style="display: none;">
+    <header class="admin-header">
+        <h1>控制台</h1>
+        <div class="admin-actions">
+            <span class="text-muted small" id="currentUser"></span>
+            <a href="/" class="btn btn-light btn-sm">公开页</a>
+            <button type="button" class="btn btn-dark btn-sm" id="logoutBtn">退出</button>
+        </div>
+    </header>
+
+    <main class="dashboard-main">
+        <div class="entry-grid">
+            <a class="entry-card" href="/admin/apk">
+                <div class="entry-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M8 3h8l2 4H6l2-4Z" stroke="currentColor" stroke-width="1.7"/>
+                        <rect x="5" y="7" width="14" height="14" rx="3" stroke="currentColor" stroke-width="1.7"/>
+                        <path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <h2>APK 管理</h2>
+                <p>查看多应用版本，上传新包，删除旧版本。</p>
+                <span class="entry-go">进入
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+            </a>
+            <a class="entry-card" href="/admin/users">
+                <div class="entry-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/>
+                        <path d="M4.5 19c.6-3 2.6-4.7 4.5-4.7S13 16 13.6 19" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                        <circle cx="16.5" cy="9" r="2.4" stroke="currentColor" stroke-width="1.7"/>
+                        <path d="M15.2 19c.4-2.1 1.7-3.3 3.2-3.3 1.2 0 2.2.7 2.8 1.8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <h2>用户管理</h2>
+                <p>维护登录账号、角色和密码。</p>
+                <span class="entry-go">进入
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+            </a>
+            <a class="entry-card" href="/admin/images">
+                <div class="entry-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <rect x="4" y="5" width="16" height="14" rx="3" stroke="currentColor" stroke-width="1.7"/>
+                        <circle cx="9" cy="10" r="1.6" stroke="currentColor" stroke-width="1.6"/>
+                        <path d="M7 17l3.5-3.5L14 16l2-2 3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <h2>图床管理</h2>
+                <p>上传图片、复制链接、删除已上传文件。</p>
+                <span class="entry-go">进入
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+            </a>
+        </div>
+    </main>
+</div>
+
+<script src="/js/admin-common.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', async function () {
+        document.getElementById('loginForm').addEventListener('submit', handleLogin);
+        const user = await verifyAuth();
+        if (user) {
+            showDashboard();
+        } else {
+            showLogin();
+        }
+    });
+
+    function showLogin() {
+        document.getElementById('loginPanel').style.display = 'grid';
+        document.getElementById('dashboardPanel').style.display = 'none';
+    }
+
+    function showDashboard() {
+        document.getElementById('loginPanel').style.display = 'none';
+        document.getElementById('dashboardPanel').style.display = 'flex';
+        fillAuthBar();
+    }
+
+    async function handleLogin(e) {
+        e.preventDefault();
+        const loginError = document.getElementById('loginError');
+        const loginBtn = document.getElementById('loginBtn');
+        loginError.style.display = 'none';
+        loginBtn.disabled = true;
+
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    username: document.getElementById('username').value.trim(),
+                    password: document.getElementById('password').value
+                })
+            });
+            const data = await response.json();
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || '登录失败');
+            }
+
+            saveAuth(data);
+            document.getElementById('loginForm').reset();
+            showDashboard();
+        } catch (error) {
+            loginError.textContent = error.message || '登录失败，请重试';
+            loginError.style.display = 'block';
+        } finally {
+            loginBtn.disabled = false;
+        }
+    }
+</script>
+</body>
+</html>

@@ -120,8 +120,17 @@
 
         resultDiv.textContent = '上传中...';
 
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            resultDiv.textContent = '请先到 /admin 登录后再上传';
+            return;
+        }
+
         fetch('/api/update/upload', {
             method: 'POST',
+            headers: {
+                Authorization: 'Bearer ' + token
+            },
             body: formData
         })
             .then(response => {

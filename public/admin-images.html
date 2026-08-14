@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图床管理</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/admin.css" rel="stylesheet">
+</head>
+<body>
+<div class="page-shell">
+    <div class="admin-header">
+        <h1>图床管理</h1>
+        <div class="admin-actions">
+            <span class="text-muted small" id="currentUser"></span>
+            <button type="button" class="btn btn-dark btn-sm" data-bs-toggle="modal" data-bs-target="#uploadModal">上传</button>
+            <a href="/image" class="btn btn-light btn-sm">公开图床</a>
+            <a href="/admin" class="btn btn-light btn-sm">管理首页</a>
+            <button type="button" class="btn btn-outline-danger btn-sm" id="logoutBtn">退出</button>
+        </div>
+    </div>
+
+    <div class="small mb-3" id="status"></div>
+    <div id="imageList">加载中...</div>
+</div>
+
+<div class="modal fade" id="uploadModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h2 class="modal-title fs-5">上传图片</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+            </div>
+            <div class="modal-body pt-0">
+                <div class="drop-zone" id="dropZone">拖拽图片到这里，或点击选择<br>jpg / png / gif / webp，单张不超过 1MB</div>
+                <input type="file" id="fileInput" accept="image/*" hidden>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/admin-common.js"></script>
+<script>
+    const MAX_SIZE = 1 * 1024 * 1024;
+    let uploadModal;
+
+    document.addEventListener('DOMContentLoaded', async function () {
+        const user = await requireAdminAuth();
+        if (!user) return;
+        fillAuthBar();
+        uploadModal = new bootstrap.Modal(document.getElementById('uploadModal'));
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        dropZone.addEventListener('click', function () { fileInput.click(); });
+        fileInput.addEventListener('change', function (event) {
+            uploadFile(event.target.files[0]);
+            fileInput.value = '';
+        });
+        dropZone.addEventListener('dragover', function (event) {
+            event.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+        dropZone.addEventListener('dragleave', function () {
+            dropZone.classList.remove('dragover');
+        });
+        dropZone.addEventListener('drop', function (event) {
+            event.preventDefault();
+            dropZone.classList.remove('dragover');
+            uploadFile(event.dataTransfer.files[0]);
+        });
+
+        loadImages();
+    });
+
+    function setStatus(message, isError) {
+        const statusEl = document.getElementById('status');
+        statusEl.textContent = message || '';
+        statusEl.className = isError ? 'small mb-3 text-danger' : 'small mb-3 text-success';
+    }
+
+    async function loadImages() {
+        const list = document.getElementById('imageList');
+        try {
+            const data = await apiRequest('/api/image/list');
+            const images = data.images || [];
+            if (!images.length) {
+                list.innerHTML = '<div class="surface p-4 text-muted">暂无图片</div>';
+                return;
+            }
+
+            const groups = new Map();
+            images.forEach(function (item) {
+                const key = (item.uploadedAt || '').slice(0, 10) || '未知日期';
+                if (!groups.has(key)) groups.set(key, []);
+                groups.get(key).push(item);
+            });
+
+            list.innerHTML = '';
+            groups.forEach(function (items, dateKey) {
+                const title = document.createElement('div');
+                title.className = 'group-title';
+                title.textContent = dateKey;
+                list.appendChild(title);
+
+                const grid = document.createElement('div');
+                grid.className = 'image-grid';
+                items.forEach(function (item) {
+                    const card = document.createElement('div');
+                    card.className = 'image-item';
+                    card.innerHTML = `
+                        <img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.filename)}">
+                        <div class="image-overlay">
+                            <div class="small mb-1">${escapeHtml(formatFileSize(item.size) || '0 B')}</div>
+                            <div class="d-flex gap-1">
+                                <button class="btn btn-sm btn-light copy-btn">复制</button>
+                                <button class="btn btn-sm btn-danger delete-btn">删除</button>
+                            </div>
+                        </div>
+                    `;
+                    card.querySelector('.copy-btn').addEventListener('click', async function () {
+                        try {
+                            await navigator.clipboard.writeText(item.url);
+                            setStatus('链接已复制');
+                        } catch (error) {
+                            setStatus('复制失败', true);
+                        }
+                    });
+                    card.querySelector('.delete-btn').addEventListener('click', async function () {
+                        if (!confirm('确定删除这张图片吗？')) return;
+                        try {
+                            await apiRequest(`/api/image/${encodeURIComponent(item.filename)}`, {
+                                method: 'DELETE',
+                                headers: authHeaders()
+                            });
+                            setStatus('删除成功');
+                            await loadImages();
+                        } catch (error) {
+                            setStatus(error.message || '删除失败', true);
+                        }
+                    });
+                    grid.appendChild(card);
+                });
+                list.appendChild(grid);
+            });
+        } catch (error) {
+            list.innerHTML = `<div class="text-danger">${escapeHtml(error.message || '加载失败')}</div>`;
+        }
+    }
+
+    async function uploadFile(file) {
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            setStatus('只能上传图片文件', true);
+            return;
+        }
+        if (file.size > MAX_SIZE) {
+            setStatus('图片大小不能超过 1MB', true);
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('image', file);
+        setStatus('上传中...');
+        try {
+            await apiRequest('/api/image/upload', {
+                method: 'POST',
+                headers: authHeaders(),
+                body: formData
+            });
+            setStatus('上传成功');
+            uploadModal.hide();
+            await loadImages();
+        } catch (error) {
+            setStatus(error.message || '上传失败', true);
+        }
+    }
+</script>
+</body>
+</html>
