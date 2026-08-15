@@ -53,8 +53,18 @@
     function renderAppTile(app) {
         const latestName = app.latest && app.latest.versionName ? app.latest.versionName : '';
         const href = '/details?pn=' + encodeURIComponent(app.packageName);
+        const assets = app.assets || {};
+        const logo = assets.logo || '';
+        const banner = assets.banner || '';
+        const classes = ['app-tile'];
+        if (banner) classes.push('has-banner');
+        if (logo) classes.push('has-logo');
+        const bannerStyle = banner
+            ? ` style="--app-banner: url('${escapeHtml(banner).replace(/'/g, '%27')}')"`
+            : '';
         return `
-            <a class="app-tile" href="${href}">
+            <a class="${classes.join(' ')}" href="${href}"${bannerStyle}>
+                ${logo ? `<img class="app-logo" src="${escapeHtml(logo)}" alt="">` : ''}
                 <h2>${escapeHtml(app.appName || app.packageName)}</h2>
                 <div class="package-name">${escapeHtml(app.packageName)}</div>
                 ${latestName ? `<div class="tile-version">${escapeHtml(latestName)}</div>` : ''}

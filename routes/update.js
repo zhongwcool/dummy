@@ -3,7 +3,9 @@ const router = express.Router();
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const multer = require('multer');
 const upload = require('../middleware/fileUpload');
+const assetUpload = require('../middleware/appAssetUpload');
 const {verifyToken} = require('../middleware/auth');
 const ApkReader = require('node-apk-parser');
 
@@ -12,6 +14,8 @@ const ApkReader = require('node-apk-parser');
 // TODO: 考虑使用其他 APK 解析方案或手动输入版本信息
 
 const appVersionsPath = path.join(__dirname, '../data/appVersions.json');
+const appAssetsDir = path.join(__dirname, '../public/app-assets');
+const ASSET_KINDS = new Set(['logo', 'banner']);
 
 const calculateFileMD5 = (filePath) => {
     return new Promise((resolve, reject) => {
@@ -90,6 +94,18 @@ const saveAppVersions = (data) => {
     }
 };
 
+function emptyAssets() {
+    return {logo: '', banner: ''};
+}
+
+function getAssets(app) {
+    const raw = app && app.assets ? app.assets : {};
+    return {
+        logo: typeof raw.logo === 'string' ? raw.logo : '',
+        banner: typeof raw.banner === 'string' ? raw.banner : ''
+    };
+}
+
 function listApps(store) {
     return Object.values(store.apps || {})
         .filter((app) => hasVersion(app.latest) || (app.history && app.history.length > 0))
@@ -97,12 +113,34 @@ function listApps(store) {
             appName: app.appName || appNameFromPackage(app.packageName),
             packageName: app.packageName,
             latest: app.latest || {},
-            history: app.history || []
+            history: app.history || [],
+            assets: getAssets(app)
         }));
 }
 
 function findApp(store, packageName) {
     return (store.apps || {})[packageName] || null;
+}
+
+function assetPublicUrl(filename) {
+    return `/app-assets/${filename}`;
+}
+
+function unlinkAssetFile(url) {
+    if (!url || typeof url !== 'string' || !url.startsWith('/app-assets/')) {
+        return;
+    }
+    const filename = path.basename(url);
+    const fullPath = path.join(appAssetsDir, filename);
+    if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+    }
+}
+
+function unlinkAppAssets(app) {
+    const assets = getAssets(app);
+    unlinkAssetFile(assets.logo);
+    unlinkAssetFile(assets.banner);
 }
 
 function deleteApkFile(downloadUrl) {
@@ -192,7 +230,8 @@ router.get('/history', (req, res) => {
             appName: app.appName,
             packageName: app.packageName,
             latest: app.latest || {},
-            history: app.history || []
+            history: app.history || [],
+            assets: getAssets(app)
         });
     }
 
@@ -306,7 +345,8 @@ router.post('/upload', verifyToken, upload.single('apk'), async (req, res) => {
                 appName: appNameFromPackage(targetPackage, appName),
                 packageName: targetPackage,
                 latest: {},
-                history: []
+                history: [],
+                assets: emptyAssets()
             };
             store.apps[targetPackage] = app;
         } else if (appName && String(appName).trim()) {
@@ -357,6 +397,105 @@ router.post('/upload', verifyToken, upload.single('apk'), async (req, res) => {
 });
 
 /**
+ * @route   POST /api/update/:packageName/assets
+ * @desc    上传应用 Logo / Banner
+ * @access  Private
+ */
+router.post('/:packageName/assets', verifyToken, (req, res) => {
+    assetUpload.single('image')(req, res, (err) => {
+        if (err instanceof multer.MulterError) {
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                return res.status(400).json({error: '图片大小不能超过 1MB'});
+            }
+            return res.status(400).json({error: err.message});
+        }
+        if (err) {
+            return res.status(400).json({error: err.message});
+        }
+        if (!req.file) {
+            return res.status(400).json({error: '请上传图片文件'});
+        }
+
+        const kind = String(req.body.kind || '').toLowerCase();
+        if (!ASSET_KINDS.has(kind)) {
+            fs.unlinkSync(req.file.path);
+            return res.status(400).json({error: '素材类型无效，请使用 logo 或 banner'});
+        }
+
+        const store = getAppVersions();
+        const app = findApp(store, req.params.packageName);
+        if (!app) {
+            fs.unlinkSync(req.file.path);
+            return res.status(404).json({error: '未找到指定应用'});
+        }
+
+        const assets = getAssets(app);
+        const imageUrl = assetPublicUrl(req.file.filename);
+
+        if (kind === 'logo') {
+            unlinkAssetFile(assets.logo);
+            assets.logo = imageUrl;
+        } else {
+            unlinkAssetFile(assets.banner);
+            assets.banner = imageUrl;
+        }
+
+        app.assets = assets;
+        if (!saveAppVersions(store)) {
+            fs.unlinkSync(req.file.path);
+            return res.status(500).json({error: '保存素材信息失败'});
+        }
+
+        return res.status(201).json({
+            message: '素材已更新',
+            assets
+        });
+    });
+});
+
+/**
+ * @route   DELETE /api/update/:packageName/assets
+ * @desc    删除应用 Logo / Banner
+ * @access  Private
+ */
+router.delete('/:packageName/assets', verifyToken, (req, res) => {
+    try {
+        const kind = String(req.query.kind || '').toLowerCase();
+        if (!ASSET_KINDS.has(kind)) {
+            return res.status(400).json({error: '素材类型无效，请使用 logo 或 banner'});
+        }
+
+        const store = getAppVersions();
+        const app = findApp(store, req.params.packageName);
+        if (!app) {
+            return res.status(404).json({error: '未找到指定应用'});
+        }
+
+        const assets = getAssets(app);
+        if (kind === 'logo') {
+            unlinkAssetFile(assets.logo);
+            assets.logo = '';
+        } else {
+            unlinkAssetFile(assets.banner);
+            assets.banner = '';
+        }
+
+        app.assets = assets;
+        if (!saveAppVersions(store)) {
+            return res.status(500).json({error: '保存素材信息失败'});
+        }
+
+        return res.json({
+            message: '素材已删除',
+            assets
+        });
+    } catch (error) {
+        console.error('删除应用素材失败:', error);
+        return res.status(500).json({error: '删除素材失败'});
+    }
+});
+
+/**
  * @route   DELETE /api/update/:packageName/:versionCode
  * @desc    删除指定应用的指定版本
  * @access  Private
@@ -396,6 +535,7 @@ router.delete('/:packageName/:versionCode', verifyToken, (req, res) => {
         }
 
         if (!hasVersion(app.latest) && (!app.history || app.history.length === 0)) {
+            unlinkAppAssets(app);
             delete store.apps[packageName];
         }
 

@@ -19,7 +19,7 @@
     </div>
 </div>
 
-<div id="appGrid" class="app-grid">
+<div id="appGrid" class="app-grid admin-app-grid">
     <div class="text-center py-5">
         <div class="spinner-border" role="status"></div>
     </div>
@@ -61,6 +61,19 @@
     </div>
 </div>
 
+<div class="modal fade" id="assetsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="assetsModalTitle">宣传素材</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+            </div>
+            <div class="modal-body" id="assetsModalBody"></div>
+        </div>
+    </div>
+</div>
+<input type="file" id="assetFileInput" accept="image/jpeg,image/png,image/gif,image/webp,.jpg,.jpeg,.png,.gif,.webp" hidden>
+
 <div class="loading" id="loading">
     <div class="spinner-border text-light" role="status"></div>
 </div>
@@ -68,16 +81,30 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/js/admin-common.js"></script>
 <script>
+    const MAX_ASSET_SIZE = 1 * 1024 * 1024;
+    let appsCache = [];
+    let assetsPackageName = '';
+    let pendingAssetKind = '';
+    let assetsModal;
+
     document.addEventListener('DOMContentLoaded', async function () {
         const user = await requireAdminAuth();
         if (!user) return;
         fillAuthBar();
+        assetsModal = new bootstrap.Modal(document.getElementById('assetsModal'));
         document.getElementById('uploadForm').addEventListener('submit', function (e) {
             e.preventDefault();
             uploadAPK();
         });
         document.getElementById('uploadModal').addEventListener('hidden.bs.modal', function () {
             document.getElementById('uploadForm').reset();
+        });
+        document.getElementById('assetFileInput').addEventListener('change', function (event) {
+            const file = event.target.files && event.target.files[0];
+            event.target.value = '';
+            if (file) {
+                uploadAsset(pendingAssetKind, file);
+            }
         });
         fetchApps();
     });
@@ -86,10 +113,31 @@
         const grid = document.getElementById('appGrid');
         try {
             const data = await apiRequest('/api/update/apps');
-            renderApps(data.apps || []);
+            appsCache = data.apps || [];
+            renderApps(appsCache);
+            if (assetsPackageName) {
+                const current = findCachedApp(assetsPackageName);
+                if (current) {
+                    renderAssetsModal(current);
+                }
+            }
         } catch (error) {
             grid.innerHTML = '<div class="alert alert-danger">获取应用列表失败，请刷新重试</div>';
         }
+    }
+
+    function findCachedApp(packageName) {
+        return appsCache.find(function (app) {
+            return app.packageName === packageName;
+        }) || null;
+    }
+
+    function getAssets(app) {
+        const raw = app && app.assets ? app.assets : {};
+        return {
+            logo: raw.logo || '',
+            banner: raw.banner || ''
+        };
     }
 
     function renderApps(apps) {
@@ -115,14 +163,202 @@
                 return renderVersion(app.packageName, version);
             }).join('')
             : '<div class="text-muted">暂无版本</div>';
+        const assets = getAssets(app);
+        const encodedPn = encodeURIComponent(app.packageName);
+        const logoHtml = assets.logo
+            ? `<img class="app-logo-sm" src="${escapeHtml(assets.logo)}" alt="">`
+            : '<div class="app-logo-sm app-logo-placeholder" aria-hidden="true"></div>';
 
         return `
             <section class="app-column">
-                <h2>${escapeHtml(app.appName || app.packageName)}</h2>
-                <div class="package-name">package name: ${escapeHtml(app.packageName)}</div>
+                <div class="app-column-head">
+                    ${logoHtml}
+                    <div class="app-column-titles">
+                        <h2>${escapeHtml(app.appName || app.packageName)}</h2>
+                        <div class="package-name">包名: <span class="package-copy" title="点击复制" role="button" tabindex="0" onclick="copyPackageName(this, '${encodedPn}')">${escapeHtml(app.packageName)}</span></div>
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openAssetsModal('${encodedPn}')">素材</button>
+                </div>
                 ${body}
             </section>
         `;
+    }
+
+    async function copyPackageName(el, encodedPackageName) {
+        const packageName = decodeURIComponent(encodedPackageName || '');
+        if (!packageName) return;
+        try {
+            await navigator.clipboard.writeText(packageName);
+        } catch (error) {
+            const input = document.createElement('textarea');
+            input.value = packageName;
+            input.setAttribute('readonly', '');
+            input.style.position = 'fixed';
+            input.style.left = '-9999px';
+            document.body.appendChild(input);
+            input.select();
+            document.execCommand('copy');
+            document.body.removeChild(input);
+        }
+        el.classList.add('copied');
+        window.clearTimeout(el._copyTimer);
+        el._copyTimer = window.setTimeout(function () {
+            el.classList.remove('copied');
+        }, 1200);
+    }
+
+    function openAssetsModal(encodedPackageName) {
+        assetsPackageName = decodeURIComponent(encodedPackageName);
+        const app = findCachedApp(assetsPackageName);
+        if (!app) {
+            alert('未找到该应用');
+            return;
+        }
+        renderAssetsModal(app);
+        assetsModal.show();
+    }
+
+    function renderAssetsModal(app) {
+        const assets = getAssets(app);
+        const appName = app.appName || app.packageName;
+        document.getElementById('assetsModalTitle').textContent = '宣传素材 · ' + appName;
+        document.getElementById('assetsModalBody').innerHTML = `
+            <p class="asset-lead">按推荐比例上传，首页卡片和详情页会更完整、更好看。</p>
+            <section class="asset-block">
+                <div class="asset-block-title">
+                    <strong>Logo</strong>
+                    <span>512×512 · 1:1 方形 · PNG 透明底更佳</span>
+                </div>
+                <div class="asset-row">
+                    ${assets.logo
+                        ? `<img class="asset-preview logo" src="${escapeHtml(assets.logo)}" alt="Logo">`
+                        : '<div class="asset-preview logo empty">未设置</div>'}
+                    <div class="asset-actions">
+                        <button type="button" class="btn btn-primary btn-sm" onclick="pickAsset('logo')">上传 Logo</button>
+                        ${assets.logo ? `<button type="button" class="btn btn-outline-danger btn-sm" onclick="removeAsset('logo')">删除</button>` : ''}
+                    </div>
+                </div>
+            </section>
+            <section class="asset-block mb-0">
+                <div class="asset-block-title">
+                    <strong>Banner</strong>
+                    <span>1200×400 · 3:1 宽图 · 小于 1MB</span>
+                </div>
+                ${renderBannerStudio(assets.banner, assets.logo, appName)}
+                <div class="asset-actions">
+                    <button type="button" class="btn btn-primary btn-sm" onclick="pickAsset('banner')">上传 Banner</button>
+                    ${assets.banner ? `<button type="button" class="btn btn-outline-danger btn-sm" onclick="removeAsset('banner')">删除</button>` : ''}
+                </div>
+            </section>
+        `;
+    }
+
+    function cssAssetUrl(url) {
+        return "url('" + String(url || '').replace(/\\/g, '/').replace(/'/g, '%27').replace(/\)/g, '%29') + "')";
+    }
+
+    function renderBannerStudio(banner, logo, appName) {
+        if (banner) {
+            const cssUrl = cssAssetUrl(banner);
+            const logoHtml = logo
+                ? `<img class="live-tile-logo" src="${escapeHtml(logo)}" alt="">`
+                : '';
+            return `
+                <div class="asset-studio">
+                    <div class="live-previews">
+                        <div class="live-preview grow">
+                            <div class="live-label">详情页效果</div>
+                            <div class="live-banner" style="background-image: ${cssUrl}"></div>
+                        </div>
+                        <div class="live-preview">
+                            <div class="live-label">首页卡片效果</div>
+                            <div class="live-tile" style="--app-banner: ${cssUrl}">
+                                ${logoHtml}
+                                <div class="live-tile-name">${escapeHtml(appName)}</div>
+                                <div class="live-tile-go">进入 →</div>
+                            </div>
+                        </div>
+                    </div>
+                    <ul class="asset-tips">
+                        <li>主体放在画面<strong>正中央</strong>，首页会左右裁成方形。</li>
+                        <li>下 1/3 会叠深色渐变和文字，不要放 Logo 或关键文案。</li>
+                        <li>用场景、产品或渐变色块，避免细小文字。</li>
+                    </ul>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="asset-studio">
+                <div class="guide-banner-sample" aria-hidden="true">
+                    <div class="guide-orb guide-orb-a"></div>
+                    <div class="guide-orb guide-orb-b"></div>
+                    <div class="guide-safe-center">主体放正中央</div>
+                    <div class="guide-safe-bottom">底部留给文字叠层，不要放关键内容</div>
+                </div>
+                <ul class="asset-tips">
+                    <li>推荐 <strong>1200×400</strong>（3:1），详情页完整展示，首页取中间方形。</li>
+                    <li>下 1/3 会被深色渐变盖住，标题、按钮、Logo 都放上半区。</li>
+                    <li>深色或对比强的画面，白色文字更清晰；单张小于 1MB。</li>
+                </ul>
+            </div>
+        `;
+    }
+
+    function pickAsset(kind) {
+        pendingAssetKind = kind;
+        document.getElementById('assetFileInput').click();
+    }
+
+    async function uploadAsset(kind, file) {
+        if (!kind || !assetsPackageName) return;
+        if (!file.type || !file.type.startsWith('image/')) {
+            alert('只能上传图片文件');
+            return;
+        }
+        if (file.size > MAX_ASSET_SIZE) {
+            alert('图片大小不能超过 1MB');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('kind', kind);
+        try {
+            const data = await apiRequest(`/api/update/${encodeURIComponent(assetsPackageName)}/assets`, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: formData
+            });
+            patchCachedAssets(data.assets);
+        } catch (error) {
+            alert(error.message || '上传失败，请重试');
+        }
+    }
+
+    async function removeAsset(kind) {
+        if (!assetsPackageName) return;
+        const label = kind === 'logo' ? 'Logo' : 'Banner';
+        if (!confirm('确定删除' + label + '吗？')) return;
+
+        try {
+            const data = await apiRequest(`/api/update/${encodeURIComponent(assetsPackageName)}/assets?kind=${encodeURIComponent(kind)}`, {
+                method: 'DELETE',
+                headers: authHeaders()
+            });
+            patchCachedAssets(data.assets);
+        } catch (error) {
+            alert(error.message || '删除失败，请重试');
+        }
+    }
+
+    function patchCachedAssets(assets) {
+        const app = findCachedApp(assetsPackageName);
+        if (app) {
+            app.assets = assets || getAssets(app);
+            renderApps(appsCache);
+            renderAssetsModal(app);
+        }
     }
 
     function renderVersion(packageName, version) {

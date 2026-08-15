@@ -47,8 +47,10 @@
         const root = document.getElementById('detailsRoot');
         const latest = data.latest && data.latest.versionCode != null ? data.latest : null;
         const history = data.history || [];
+        const titleName = data.appName || data.packageName || 'APK版本管理系统';
+        document.title = titleName + ' · APK版本管理系统';
 
-        let html = '';
+        let html = renderAppShowcase(data);
         html += '<section class="details-section"><h2>最新版本</h2>';
         html += latest ? renderVersionCard(latest, true) : '<div class="surface p-4 text-muted">暂无最新版本</div>';
         html += '</section>';
@@ -63,6 +65,30 @@
         }
         html += '</section>';
         root.innerHTML = html;
+    }
+
+    function renderAppShowcase(data) {
+        const assets = data.assets || {};
+        const logo = assets.logo || '';
+        const banner = assets.banner || '';
+        const hasIdentity = Boolean(logo || data.appName || data.packageName);
+        if (!banner && !hasIdentity) {
+            return '';
+        }
+
+        let html = '<section class="app-showcase">';
+        if (banner) {
+            html += `<img class="app-banner" src="${escapeHtml(banner)}" alt="">`;
+        }
+        html += '<div class="app-identity">';
+        if (logo) {
+            html += `<img class="app-logo" src="${escapeHtml(logo)}" alt="">`;
+        }
+        html += `<div>
+            <h2>${escapeHtml(data.appName || data.packageName || '')}</h2>
+            <div class="package-name">${escapeHtml(data.packageName || '')}</div>
+        </div></div></section>`;
+        return html;
     }
 
     function renderVersionCard(version, isLatest) {
