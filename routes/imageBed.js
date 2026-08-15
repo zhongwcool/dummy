@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 const upload = require('../middleware/imageUpload');
+const {verifyToken} = require('../middleware/auth');
 
 const router = express.Router();
 const imageDir = path.join(__dirname, '../public/images');
@@ -68,7 +69,7 @@ router.post('/upload', (req, res) => {
     });
 });
 
-router.delete('/:filename', (req, res) => {
+router.delete('/:filename', verifyToken, (req, res) => {
     try {
         const filename = path.basename(req.params.filename || '');
         const ext = path.extname(filename).toLowerCase();

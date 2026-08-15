@@ -268,7 +268,6 @@
             <div class="item-actions">
                 <button class="copy-item-link">复制</button>
                 <button class="btn-muted open-item-link">打开</button>
-                <button class="btn-danger delete-item-link">删除</button>
             </div>
         </div>
     </div>
@@ -393,7 +392,6 @@
                     const meta = node.querySelector('.image-meta');
                     const copyBtn = node.querySelector('.copy-item-link');
                     const openBtn = node.querySelector('.open-item-link');
-                    const deleteBtn = node.querySelector('.delete-item-link');
 
                     img.src = item.url;
                     img.title = item.filename;
@@ -413,23 +411,6 @@
 
                     openBtn.addEventListener('click', () => {
                         window.open(item.url, '_blank');
-                    });
-
-                    deleteBtn.addEventListener('click', async () => {
-                        if (!confirm(`确认删除图片 ${item.filename} ?`)) return;
-                        try {
-                            const deleteResponse = await fetch(`/api/image/${encodeURIComponent(item.filename)}`, {
-                                method: 'DELETE'
-                            });
-                            const deleteData = await deleteResponse.json();
-                            if (!deleteResponse.ok) {
-                                throw new Error(deleteData.error || '删除失败');
-                            }
-                            setStatus('删除成功');
-                            await loadImages();
-                        } catch (error) {
-                            setStatus(error.message || '删除失败', true);
-                        }
                     });
 
                     grid.appendChild(node);
