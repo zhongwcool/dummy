@@ -127,6 +127,10 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+app.get('/details', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'details.html'));
+});
+
 app.get('/image', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'image.html'));
 });

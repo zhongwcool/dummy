@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APK版本管理系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/admin.css" rel="stylesheet">
+</head>
+<body>
+<div class="page-shell">
+    <div class="details-header">
+        <h1>APK版本管理系统</h1>
+        <a href="/">返回首页</a>
+    </div>
+    <div id="detailsRoot">
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', loadDetails);
+
+    async function loadDetails() {
+        const root = document.getElementById('detailsRoot');
+        const packageName = new URLSearchParams(location.search).get('pn') || '';
+        if (!packageName) {
+            root.innerHTML = '<div class="alert alert-danger">缺少包名</div>';
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/update/history?packageName=' + encodeURIComponent(packageName));
+            const data = await response.json();
+            if (!response.ok) {
+                throw new Error(data.error || '获取详情失败');
+            }
+            renderDetails(data);
+        } catch (error) {
+            root.innerHTML = `<div class="alert alert-danger">${escapeHtml(error.message || '获取详情失败')}</div>`;
+        }
+    }
+
+    function renderDetails(data) {
+        const root = document.getElementById('detailsRoot');
+        const latest = data.latest && data.latest.versionCode != null ? data.latest : null;
+        const history = data.history || [];
+
+        let html = '';
+        html += '<section class="details-section"><h2>最新版本</h2>';
+        html += latest ? renderVersionCard(latest, true) : '<div class="surface p-4 text-muted">暂无最新版本</div>';
+        html += '</section>';
+
+        html += '<section class="details-section"><h2>历史版本</h2>';
+        if (!history.length) {
+            html += '<div class="surface p-4 text-muted">暂无历史版本</div>';
+        } else {
+            html += `<div class="history-grid">${history.map(function (item) {
+                return renderVersionCard(item, false);
+            }).join('')}</div>`;
+        }
+        html += '</section>';
+        root.innerHTML = html;
+    }
+
+    function renderVersionCard(version, isLatest) {
+        const dateLabel = isLatest ? '上传日期' : '发布日期';
+        const dateValue = version.uploadDate || version.releaseDate || '未知日期';
+        const fileSize = formatFileSize(version.fileSize);
+        const downloadClass = isLatest ? 'btn btn-success' : 'btn btn-outline-primary';
+        const badges = [
+            isLatest ? '<span class="badge bg-primary">最新</span>' : '',
+            version.forceUpdate ? '<span class="badge bg-danger">强制更新</span>' : ''
+        ].filter(Boolean).join(' ');
+
+        return `
+            <article class="version-card${isLatest ? ' latest' : ''}">
+                <div class="version-title">${escapeHtml(version.versionName || '')} ${badges}</div>
+                <div class="version-meta">版本号: ${escapeHtml(String(version.versionCode))} | 包名: ${escapeHtml(version.packageName || '')}</div>
+                <div class="version-meta">${dateLabel}: ${escapeHtml(dateValue)}</div>
+                ${fileSize ? `<div class="version-meta">文件大小: ${escapeHtml(fileSize)}</div>` : ''}
+                ${version.md5 ? `<div class="md5-box">${escapeHtml(version.md5)}</div>` : ''}
+                <div class="version-desc">${escapeHtml(version.updateDescription || '').replace(/\n/g, '<br>')}</div>
+                <a class="${downloadClass}" href="${escapeHtml(version.downloadUrl || '#')}" download>下载APK</a>
+            </article>
+        `;
+    }
+
+    function formatFileSize(bytes) {
+        if (!bytes) return '';
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let size = bytes;
+        let unitIndex = 0;
+        while (size >= 1024 && unitIndex < units.length - 1) {
+            size /= 1024;
+            unitIndex++;
+        }
+        return `${size.toFixed(2)} ${units[unitIndex]}`;
+    }
+
+    function escapeHtml(text) {
+        return String(text == null ? '' : text)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+</script>
+</body>
+</html>

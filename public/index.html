@@ -13,7 +13,7 @@
     </style>
 </head>
 <body>
-<div class="page-shell">
+<div class="page-shell public-home">
     <div class="admin-header">
         <h1>APK版本管理系统</h1>
     </div>
@@ -47,63 +47,24 @@
             grid.innerHTML = '<div class="surface p-4 text-muted">暂无应用版本</div>';
             return;
         }
-        grid.innerHTML = apps.map(renderAppColumn).join('');
+        grid.innerHTML = apps.map(renderAppTile).join('');
     }
 
-    function renderAppColumn(app) {
-        const versions = [];
-        if (app.latest && app.latest.versionCode != null) {
-            versions.push(Object.assign({isLatest: true}, app.latest));
-        }
-        (app.history || []).forEach(function (item) {
-            versions.push(Object.assign({isLatest: false}, item));
-        });
-
-        const body = versions.length
-            ? versions.map(renderVersion).join('')
-            : '<div class="text-muted">暂无版本</div>';
-
+    function renderAppTile(app) {
+        const latestName = app.latest && app.latest.versionName ? app.latest.versionName : '';
+        const href = '/details?pn=' + encodeURIComponent(app.packageName);
         return `
-            <section class="app-column">
+            <a class="app-tile" href="${href}">
                 <h2>${escapeHtml(app.appName || app.packageName)}</h2>
-                <div class="package-name">package name: ${escapeHtml(app.packageName)}</div>
-                ${body}
-            </section>
+                <div class="package-name">${escapeHtml(app.packageName)}</div>
+                ${latestName ? `<div class="tile-version">${escapeHtml(latestName)}</div>` : ''}
+                <span class="entry-go">进入
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+            </a>
         `;
-    }
-
-    function renderVersion(version) {
-        const dateLabel = version.isLatest ? '上传日期' : '发布日期';
-        const dateValue = version.uploadDate || version.releaseDate || '未知日期';
-        const fileSize = formatFileSize(version.fileSize);
-        const badges = [
-            version.isLatest ? '<span class="badge bg-primary">最新</span>' : '',
-            version.forceUpdate ? '<span class="badge bg-danger">强制更新</span>' : ''
-        ].filter(Boolean).join(' ');
-
-        return `
-            <article class="version-item">
-                <div class="version-title">${escapeHtml(version.versionName || '')} ${badges}</div>
-                <div class="version-meta">版本号: ${escapeHtml(String(version.versionCode))}</div>
-                <div class="version-meta">${dateLabel}: ${escapeHtml(dateValue)}</div>
-                ${fileSize ? `<div class="version-meta">文件大小: ${escapeHtml(fileSize)}</div>` : ''}
-                ${version.md5 ? `<div class="version-meta">MD5: <span class="md5-hash">${escapeHtml(version.md5)}</span></div>` : ''}
-                <div class="version-desc">${escapeHtml(version.updateDescription || '').replace(/\n/g, '<br>')}</div>
-                <a class="btn btn-success btn-sm" href="${escapeHtml(version.downloadUrl || '#')}" download>下载APK</a>
-            </article>
-        `;
-    }
-
-    function formatFileSize(bytes) {
-        if (!bytes) return '';
-        const units = ['B', 'KB', 'MB', 'GB'];
-        let size = bytes;
-        let unitIndex = 0;
-        while (size >= 1024 && unitIndex < units.length - 1) {
-            size /= 1024;
-            unitIndex++;
-        }
-        return `${size.toFixed(2)} ${units[unitIndex]}`;
     }
 
     function escapeHtml(text) {
