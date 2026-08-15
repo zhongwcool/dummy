@@ -2,4 +2,6 @@
 /.env
 /logs/
 /data/
-/public/files/apk-1753426154002-797338625.apk
+/public/files/
+/public/images/
+/public/app-assets/
