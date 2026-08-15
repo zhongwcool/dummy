@@ -482,16 +482,8 @@ body::before {
     box-shadow: var(--shadow-low);
 }
 
-.version-card.latest {
-    padding: 1.4rem 1.4rem 1.25rem;
-}
-
 .version-card .version-title {
     font-size: 1.25rem;
-}
-
-.version-card.latest .version-title {
-    font-size: 1.45rem;
 }
 
 .version-card .md5-box {
@@ -602,7 +594,63 @@ body::before {
     display: flex;
     align-items: center;
     gap: 0.9rem;
-    padding: 1.1rem 1.2rem 1.15rem;
+    min-width: 0;
+    flex: 1;
+    padding: 0;
+}
+
+.app-hero-body {
+    padding: 1.1rem 1.25rem 1.2rem;
+}
+
+.app-hero-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.app-hero-top .btn {
+    flex-shrink: 0;
+    padding: 0.5rem 1.15rem;
+    border-radius: 999px;
+}
+
+.app-hero-latest {
+    margin-top: 0.95rem;
+    padding-top: 0.95rem;
+    box-shadow: inset 0 1px 0 rgba(20, 24, 32, 0.06);
+}
+
+.app-hero-latest .version-title {
+    font-size: 1.15rem;
+    margin-bottom: 0.4rem;
+}
+
+.hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 1.1rem;
+    font-size: 0.85rem;
+    color: #5b6472;
+    margin-bottom: 0.45rem;
+}
+
+.app-hero-latest .md5-box {
+    display: inline;
+    margin: 0;
+    padding: 0.12rem 0.45rem;
+    border-radius: 8px;
+    background: #f3f4f6;
+    font-family: "Cascadia Mono", "Courier New", monospace;
+    font-size: 0.75rem;
+    word-break: break-all;
+    color: #5b6472;
+}
+
+.app-hero-latest .version-desc {
+    margin-bottom: 0;
 }
 
 .app-identity h2 {
@@ -1028,6 +1076,10 @@ body::before {
 
     .history-grid {
         grid-template-columns: 1fr;
+    }
+
+    .app-hero-top {
+        flex-wrap: wrap;
     }
 
     .live-previews {

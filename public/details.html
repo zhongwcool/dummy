@@ -50,36 +50,29 @@
         const titleName = data.appName || data.packageName || 'APK版本管理系统';
         document.title = titleName + ' · APK版本管理系统';
 
-        let html = renderAppShowcase(data);
-        html += '<section class="details-section"><h2>最新版本</h2>';
-        html += latest ? renderVersionCard(latest, true) : '<div class="surface p-4 text-muted">暂无最新版本</div>';
-        html += '</section>';
-
+        let html = renderAppShowcase(data, latest);
         html += '<section class="details-section"><h2>历史版本</h2>';
         if (!history.length) {
             html += '<div class="surface p-4 text-muted">暂无历史版本</div>';
         } else {
             html += `<div class="history-grid">${history.map(function (item) {
-                return renderVersionCard(item, false);
+                return renderVersionCard(item);
             }).join('')}</div>`;
         }
         html += '</section>';
         root.innerHTML = html;
     }
 
-    function renderAppShowcase(data) {
+    function renderAppShowcase(data, latest) {
         const assets = data.assets || {};
         const logo = assets.logo || '';
         const banner = assets.banner || '';
-        const hasIdentity = Boolean(logo || data.appName || data.packageName);
-        if (!banner && !hasIdentity) {
-            return '';
-        }
 
         let html = '<section class="app-showcase">';
         if (banner) {
             html += `<img class="app-banner" src="${escapeHtml(banner)}" alt="">`;
         }
+        html += '<div class="app-hero-body"><div class="app-hero-top">';
         html += '<div class="app-identity">';
         if (logo) {
             html += `<img class="app-logo" src="${escapeHtml(logo)}" alt="">`;
@@ -87,29 +80,49 @@
         html += `<div>
             <h2>${escapeHtml(data.appName || data.packageName || '')}</h2>
             <div class="package-name">${escapeHtml(data.packageName || '')}</div>
-        </div></div></section>`;
+        </div></div>`;
+        if (latest && latest.downloadUrl) {
+            html += `<a class="btn btn-success" href="${escapeHtml(latest.downloadUrl)}" download>下载APK</a>`;
+        }
+        html += '</div>';
+        html += latest ? renderLatestInline(latest) : '<div class="text-muted">暂无最新版本</div>';
+        html += '</div></section>';
         return html;
     }
 
-    function renderVersionCard(version, isLatest) {
-        const dateLabel = isLatest ? '上传日期' : '发布日期';
-        const dateValue = version.uploadDate || version.releaseDate || '未知日期';
+    function renderLatestInline(version) {
         const fileSize = formatFileSize(version.fileSize);
-        const downloadClass = isLatest ? 'btn btn-success' : 'btn btn-outline-primary';
         const badges = [
-            isLatest ? '<span class="badge bg-primary">最新</span>' : '',
+            '<span class="badge bg-primary">最新</span>',
             version.forceUpdate ? '<span class="badge bg-danger">强制更新</span>' : ''
         ].filter(Boolean).join(' ');
 
         return `
-            <article class="version-card${isLatest ? ' latest' : ''}">
+            <div class="app-hero-latest">
                 <div class="version-title">${escapeHtml(version.versionName || '')} ${badges}</div>
-                <div class="version-meta">版本号: ${escapeHtml(String(version.versionCode))} | 包名: ${escapeHtml(version.packageName || '')}</div>
-                <div class="version-meta">${dateLabel}: ${escapeHtml(dateValue)}</div>
+                <div class="hero-meta">
+                    <span>版本号: ${escapeHtml(String(version.versionCode))}</span>
+                    <span>上传日期: ${escapeHtml(version.uploadDate || version.releaseDate || '未知日期')}</span>
+                    ${fileSize ? `<span>文件大小: ${escapeHtml(fileSize)}</span>` : ''}
+                    ${version.md5 ? `<span class="md5-box">MD5: ${escapeHtml(version.md5)}</span>` : ''}
+                </div>
+                <div class="version-desc">${escapeHtml(version.updateDescription || '').replace(/\n/g, '<br>')}</div>
+            </div>
+        `;
+    }
+
+    function renderVersionCard(version) {
+        const fileSize = formatFileSize(version.fileSize);
+
+        return `
+            <article class="version-card">
+                <div class="version-title">${escapeHtml(version.versionName || '')}</div>
+                <div class="version-meta">版本号: ${escapeHtml(String(version.versionCode))}</div>
+                <div class="version-meta">发布日期: ${escapeHtml(version.releaseDate || version.uploadDate || '未知日期')}</div>
                 ${fileSize ? `<div class="version-meta">文件大小: ${escapeHtml(fileSize)}</div>` : ''}
                 ${version.md5 ? `<div class="md5-box">${escapeHtml(version.md5)}</div>` : ''}
                 <div class="version-desc">${escapeHtml(version.updateDescription || '').replace(/\n/g, '<br>')}</div>
-                <a class="${downloadClass}" href="${escapeHtml(version.downloadUrl || '#')}" download>下载APK</a>
+                <a class="btn btn-outline-primary" href="${escapeHtml(version.downloadUrl || '#')}" download>下载APK</a>
             </article>
         `;
     }
