@@ -19,7 +19,7 @@ Node.js + Express 实现简易测试api
 
 管理页：`/admin/stats`（需 admin 登录）
 
-数据存在 SQLite 文件 `data/stats.db`。只保留每台设备的最后一条状态（按 `appId + deviceId` 覆盖更新），不存上报流水。首次上报会按 `appId` 自动建档；平台（Android / iOS / Windows / macOS / Linux）是设备字段，不编进产品 ID。
+数据存在 SQLite 文件 `data/stats.db`（使用 Node.js 内置 `node:sqlite`，无需安装 `better-sqlite3`）。只保留每台设备的最后一条状态（按 `appId + deviceId` 覆盖更新），不存上报流水。首次上报会按 `appId` 自动建档；平台（Android / iOS / Windows / macOS / Linux）是设备字段，不编进产品 ID。
 
 ### 客户端上报
 
@@ -60,7 +60,7 @@ Node.js + Express 实现简易测试api
 
 ### 系统要求
 
-- Node.js (v12.0.0 或更高版本)
+- Node.js (v22.13.0 或更高版本，使用内置 sqlite)
 - npm (v6.0.0 或更高版本)
 
 ### 主要依赖
@@ -71,7 +71,6 @@ Node.js + Express 实现简易测试api
 - dotenv - 环境变量配置
 - jsonwebtoken - JWT 认证
 - bcryptjs - 密码加密
-- better-sqlite3 - 客户端统计 SQLite 存储
 - morgan - HTTP 请求日志
 - cookie-parser - Cookie 解析
 

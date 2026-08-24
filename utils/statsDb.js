@@ -1,6 +1,12 @@
 const fs = require('fs');
 const path = require('path');
-const Database = require('better-sqlite3');
+
+let DatabaseSync;
+try {
+    ({DatabaseSync} = require('node:sqlite'));
+} catch (error) {
+    throw new Error(`客户端统计需要 Node.js 22.13+ 的内置 sqlite，当前版本是 ${process.version}`);
+}
 
 const DATA_DIR = path.join(__dirname, '../data');
 const DB_PATH = path.join(DATA_DIR, 'stats.db');
@@ -72,9 +78,9 @@ function getDb() {
         fs.mkdirSync(DATA_DIR, {recursive: true});
     }
 
-    db = new Database(DB_PATH);
-    db.pragma('journal_mode = WAL');
-    db.pragma('busy_timeout = 5000');
+    db = new DatabaseSync(DB_PATH, {timeout: 5000});
+    db.exec('PRAGMA journal_mode = WAL');
+    db.exec('PRAGMA busy_timeout = 5000');
     db.exec(`
         CREATE TABLE IF NOT EXISTS products (
             app_id TEXT PRIMARY KEY,
@@ -118,6 +124,26 @@ function getDb() {
     return db;
 }
 
+function withTransaction(conn, fn) {
+    conn.exec('BEGIN IMMEDIATE');
+    try {
+        const result = fn();
+        conn.exec('COMMIT');
+        return result;
+    } catch (error) {
+        try {
+            conn.exec('ROLLBACK');
+        } catch (_) {
+            // 连接已中断时 rollback 可能再次失败
+        }
+        throw error;
+    }
+}
+
+function changedRows(info) {
+    return Number(info && info.changes) > 0;
+}
+
 function getProduct(appId) {
     return getDb().prepare('SELECT app_id, app_name, created_at FROM products WHERE app_id = ?').get(appId) || null;
 }
@@ -131,7 +157,7 @@ function upsertReport(payload) {
     const platform = payload.platform;
     const appName = (hasField(payload, 'appName') && payload.appName) ? payload.appName : appNameFromId(appId);
 
-    const tx = conn.transaction(() => {
+    withTransaction(conn, () => {
         conn.prepare(`
             INSERT INTO products (app_id, app_name, created_at)
             VALUES (?, ?, ?)
@@ -205,8 +231,6 @@ function upsertReport(payload) {
             `).run(today, appId, deviceId);
         }
     });
-
-    tx();
 }
 
 function listProducts() {
@@ -380,19 +404,16 @@ function getTrend(appId, days, platform) {
 }
 
 function renameProduct(appId, appName) {
-    const info = getDb().prepare('UPDATE products SET app_name = ? WHERE app_id = ?').run(appName, appId);
-    return info.changes > 0;
+    return changedRows(getDb().prepare('UPDATE products SET app_name = ? WHERE app_id = ?').run(appName, appId));
 }
 
 function deleteProduct(appId) {
     const conn = getDb();
-    const tx = conn.transaction(() => {
+    return withTransaction(conn, () => {
         conn.prepare('DELETE FROM daily_stats WHERE app_id = ?').run(appId);
         conn.prepare('DELETE FROM devices WHERE app_id = ?').run(appId);
-        const info = conn.prepare('DELETE FROM products WHERE app_id = ?').run(appId);
-        return info.changes > 0;
+        return changedRows(conn.prepare('DELETE FROM products WHERE app_id = ?').run(appId));
     });
-    return tx();
 }
 
 function rollupDate(dateStr) {
@@ -417,7 +438,7 @@ function purgeStale(deviceDays = 180, dailyDays = 365) {
     const dailyCutoff = localDate(addDays(new Date(), -dailyDays));
     const devices = conn.prepare('DELETE FROM devices WHERE last_seen < ?').run(deviceCutoff);
     const daily = conn.prepare('DELETE FROM daily_stats WHERE date < ?').run(dailyCutoff);
-    return {devices: devices.changes, daily: daily.changes};
+    return {devices: Number(devices.changes) || 0, daily: Number(daily.changes) || 0};
 }
 
 function runMaintenance() {
