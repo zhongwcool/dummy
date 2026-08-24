@@ -65,7 +65,8 @@ body::before {
     gap: 0.65rem;
 }
 
-.admin-actions .btn {
+.admin-actions .btn,
+.stats-module-actions .btn {
     border: 0;
     border-radius: 999px;
     padding: 0.4rem 0.9rem;
@@ -75,12 +76,15 @@ body::before {
 }
 
 .admin-actions .btn:hover,
-.admin-actions .btn:focus {
+.admin-actions .btn:focus,
+.stats-module-actions .btn:hover,
+.stats-module-actions .btn:focus {
     transform: translateY(-1px);
     box-shadow: var(--shadow-mid);
 }
 
-.admin-actions .btn:active {
+.admin-actions .btn:active,
+.stats-module-actions .btn:active {
     transform: translateY(0);
     box-shadow: var(--shadow-low);
 }
@@ -219,6 +223,7 @@ body::before {
 .entry-card:nth-child(1) { animation: rise 0.7s var(--ease) both; }
 .entry-card:nth-child(2) { animation: rise 0.7s 0.08s var(--ease) both; }
 .entry-card:nth-child(3) { animation: rise 0.7s 0.16s var(--ease) both; }
+.entry-card:nth-child(4) { animation: rise 0.7s 0.24s var(--ease) both; }
 
 @keyframes rise {
     from {
@@ -1055,6 +1060,228 @@ body::before {
     overflow: hidden;
 }
 
+.stats-product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+}
+
+.stats-product-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    text-align: left;
+    padding: 1.2rem 1.2rem 1.1rem;
+    background: var(--paper);
+    backdrop-filter: blur(18px);
+    border: 0;
+    border-radius: 24px;
+    box-shadow: var(--shadow-low), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    color: inherit;
+    transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease);
+}
+
+.stats-product-card:hover,
+.stats-product-card:focus {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-mid);
+    outline: none;
+}
+
+.stats-product-card h2 {
+    font-size: 1.1rem;
+    font-weight: 680;
+    margin: 0 0 0.25rem;
+    word-break: break-word;
+}
+
+.stats-product-card .package-name {
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-bottom: 0.85rem;
+    word-break: break-all;
+}
+
+.stats-product-meta {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.82rem;
+    color: var(--ink);
+}
+
+.stats-product-meta strong {
+    font-weight: 700;
+}
+
+.stats-platform-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.85rem;
+}
+
+.stats-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 0.72rem;
+    font-weight: 650;
+}
+
+.stats-empty {
+    padding: 3rem 1.25rem;
+    text-align: center;
+    color: var(--muted);
+}
+
+.stats-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.15rem;
+}
+
+.stats-kpi {
+    background: var(--paper);
+    backdrop-filter: blur(18px);
+    border-radius: 20px;
+    padding: 1rem 1.05rem;
+    box-shadow: var(--shadow-low), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.stats-kpi .label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-bottom: 0.3rem;
+}
+
+.stats-kpi .value {
+    font-size: 1.4rem;
+    font-weight: 720;
+    letter-spacing: -0.03em;
+}
+
+.stats-platform-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+}
+
+.stats-platform-tabs .btn {
+    border-radius: 999px;
+    border: 0;
+    background: var(--paper);
+    box-shadow: var(--shadow-low);
+}
+
+.stats-platform-tabs .btn.active {
+    background: var(--ink);
+    color: #fff;
+}
+
+.stats-charts {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
+    gap: 1rem;
+    margin-bottom: 1.15rem;
+}
+
+.stats-chart-card {
+    background: var(--paper);
+    backdrop-filter: blur(18px);
+    border-radius: 24px;
+    padding: 1.1rem 1.2rem 1rem;
+    box-shadow: var(--shadow-low), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    min-height: 280px;
+}
+
+.stats-chart-card h2 {
+    font-size: 0.95rem;
+    font-weight: 680;
+    margin: 0 0 0.75rem;
+}
+
+.stats-chart-wrap {
+    position: relative;
+    height: 220px;
+}
+
+.stats-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.stats-filters .form-control,
+.stats-filters .form-select {
+    width: auto;
+    min-width: 140px;
+    border-radius: 999px;
+}
+
+.stats-pager {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1.1rem;
+}
+
+.stats-detail-title {
+    min-width: 0;
+}
+
+.stats-header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    min-width: 0;
+    flex: 1;
+    flex-wrap: wrap;
+}
+
+.stats-module-actions {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    padding-left: 0.9rem;
+    border-left: 1px solid rgba(20, 24, 32, 0.1);
+}
+
+.stats-detail-title .package-name {
+    margin: 0.2rem 0 0;
+    font-size: 0.8rem;
+    color: var(--muted);
+    word-break: break-all;
+}
+
+.stats-shell {
+    width: min(1520px, calc(100% - 2.5rem));
+}
+
+.stats-device-table {
+    width: 100%;
+}
+
+.stats-device-table th,
+.stats-device-table td {
+    white-space: nowrap;
+}
+
+.stats-device-panel .table > :not(caption) > * > * {
+    padding-left: 1.15rem;
+    padding-right: 1.15rem;
+}
+
 @media (max-width: 900px) {
     .entry-grid {
         grid-template-columns: 1fr;
@@ -1064,6 +1291,10 @@ body::before {
     .page-shell {
         width: min(1120px, calc(100% - 1.5rem));
         padding-top: 1rem;
+    }
+
+    .stats-shell {
+        width: calc(100% - 1.5rem);
     }
 
     .app-grid {
@@ -1093,5 +1324,20 @@ body::before {
     .guide-safe-center {
         font-size: 0.68rem;
         padding: 0.2rem 0.5rem;
+    }
+
+    .stats-kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .stats-charts {
+        grid-template-columns: 1fr;
+    }
+
+    .stats-filters .form-control,
+    .stats-filters .form-select {
+        min-width: 0;
+        width: 100%;
+        flex: 1 1 140px;
     }
 }

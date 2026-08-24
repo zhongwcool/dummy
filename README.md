@@ -15,6 +15,47 @@ Node.js + Express 实现简易测试api
 - 上传成功后返回 `imageUrl`，可直接访问
 - 图片展示：左侧默认按日期分组，组内按上传时间倒序
 
+## 客户端统计
+
+管理页：`/admin/stats`（需 admin 登录）
+
+数据存在 SQLite 文件 `data/stats.db`。只保留每台设备的最后一条状态（按 `appId + deviceId` 覆盖更新），不存上报流水。首次上报会按 `appId` 自动建档；平台（Android / iOS / Windows / macOS / Linux）是设备字段，不编进产品 ID。
+
+### 客户端上报
+
+- `POST /api/stats/report`（公开，无需登录）
+- 建议时机：每次冷启动一次；桌面长驻进程每 24 小时心跳一次；切换账号时补报一次
+- 失败应静默忽略，不要影响客户端正常功能
+- `deviceId` 由客户端首次启动生成 UUID 并持久化，不要用硬件 ID
+- 兼容：多传的未知字段会被忽略；没出现的选填字段不会覆盖成空。要清空账号请显式传 `"account": ""`（退出登录）
+
+```json
+{
+  "appId": "com.example.myapp",
+  "deviceId": "550e8400-e29b-41d4-a716-446655440000",
+  "platform": "android",
+  "account": "alice",
+  "versionName": "2.3.1",
+  "versionCode": 231,
+  "osVersion": "Android 14",
+  "deviceModel": "Pixel 8",
+  "arch": "arm64",
+  "locale": "zh-CN",
+  "channel": "official"
+}
+```
+
+`platform` 仅允许：`android` / `ios` / `windows` / `mac` / `linux`。
+
+### 管理接口（需 admin token）
+
+- `GET /api/stats/products` - 产品列表
+- `GET /api/stats/:appId/summary` - 概览（可加 `?platform=`）
+- `GET /api/stats/:appId/devices` - 设备明细（`platform` / `version` / `account` / `page` / `pageSize`）
+- `GET /api/stats/:appId/trend?days=30` - 日活趋势
+- `PUT /api/stats/:appId` - 修改显示名 `{ "appName": "..." }`
+- `DELETE /api/stats/:appId` - 删除该产品全部统计
+
 ## 运行必要条件
 
 ### 系统要求
@@ -30,6 +71,7 @@ Node.js + Express 实现简易测试api
 - dotenv - 环境变量配置
 - jsonwebtoken - JWT 认证
 - bcryptjs - 密码加密
+- better-sqlite3 - 客户端统计 SQLite 存储
 - morgan - HTTP 请求日志
 - cookie-parser - Cookie 解析
 
@@ -86,12 +128,15 @@ project/
   ├── middleware/
   │   └── auth.js          # 认证相关中间件（验证token和角色）
   ├── utils/
-  │   └── fileHandler.js   # 文件操作工具（JSON数据读写）
+  │   ├── fileHandler.js   # 文件操作工具（JSON数据读写）
+  │   └── statsDb.js       # 客户端统计 SQLite
   ├── routes/
   │   ├── auth.js          # 认证路由（登录、登出、验证token）
-  │   └── users.js         # 用户管理路由
+  │   ├── users.js         # 用户管理路由
+  │   └── stats.js         # 客户端统计上报与查询
   ├── data/
-  │   └── users.json       # 用户数据
+  │   ├── users.json       # 用户数据
+  │   └── stats.db         # 客户端统计（git 忽略）
   ├── app.js              # 应用主入口
   ├── package.json        # 项目配置
   ├── .env               # 环境变量配置
@@ -105,13 +150,16 @@ project/
 
 2. **utils/** - 工具函数目录
     - `fileHandler.js` - JSON文件数据库操作
+    - `statsDb.js` - 客户端统计 SQLite 读写与每日聚合
 
 3. **routes/** - 路由目录
     - `auth.js` - 用户认证相关接口
     - `users.js` - 用户管理相关接口
+    - `stats.js` - 客户端统计上报与管理查询
 
 4. **data/** - 数据存储目录
     - `users.json` - 用户数据存储
+    - `stats.db` - 客户端统计 SQLite
 
 ### 环境变量配置
 

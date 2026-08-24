@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客户端统计</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/admin.css" rel="stylesheet">
+</head>
+<body>
+<div class="page-shell stats-shell">
+    <div class="admin-header">
+        <div class="stats-header-left">
+            <div class="stats-detail-title">
+                <h1 id="pageTitle">客户端统计</h1>
+                <p class="package-name" id="pageSubtitle" style="display: none;"></p>
+            </div>
+            <div class="stats-module-actions" id="moduleActions">
+                <button type="button" class="btn btn-light btn-sm" id="backBtn">返回列表</button>
+                <button type="button" class="btn btn-light btn-sm" id="renameBtn">改名</button>
+                <button type="button" class="btn btn-outline-danger btn-sm" id="deleteBtn">删除</button>
+            </div>
+        </div>
+        <div class="admin-actions">
+            <span class="text-muted small" id="currentUser"></span>
+            <a href="/admin" class="btn btn-light btn-sm">管理首页</a>
+            <button type="button" class="btn btn-outline-danger btn-sm" id="logoutBtn">退出</button>
+        </div>
+    </div>
+
+    <div id="listView">
+        <div id="productGrid" class="stats-product-grid">
+            <div class="text-center py-5 w-100">
+                <div class="spinner-border" role="status"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="detailView" style="display: none;">
+        <div class="stats-kpi-grid" id="kpiGrid"></div>
+        <div class="stats-platform-tabs" id="platformTabs"></div>
+        <div class="stats-charts">
+            <div class="stats-chart-card">
+                <h2>版本分布</h2>
+                <div class="stats-chart-wrap">
+                    <canvas id="versionChart"></canvas>
+                </div>
+            </div>
+            <div class="stats-chart-card">
+                <h2>30 日活跃设备</h2>
+                <div class="stats-chart-wrap">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="stats-filters">
+            <input type="search" class="form-control form-control-sm" id="accountFilter" placeholder="搜索账号">
+            <select class="form-select form-select-sm" id="versionFilter">
+                <option value="">全部版本</option>
+            </select>
+        </div>
+        <div class="table-responsive surface user-panel stats-device-panel">
+            <table class="table table-hover mb-0 stats-device-table">
+                <thead>
+                <tr>
+                    <th>账号</th>
+                    <th>平台</th>
+                    <th>版本</th>
+                    <th>系统</th>
+                    <th>机型</th>
+                    <th>IP</th>
+                    <th>首次活跃</th>
+                    <th>最后活跃</th>
+                </tr>
+                </thead>
+                <tbody id="deviceTable"></tbody>
+            </table>
+            <div class="stats-pager">
+                <span class="text-muted small" id="pageInfo">—</span>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-light btn-sm" id="prevPage">上一页</button>
+                    <button type="button" class="btn btn-light btn-sm" id="nextPage">下一页</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="renameModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="renameForm">
+                <div class="modal-header">
+                    <h2 class="modal-title fs-5">修改显示名</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
+                </div>
+                <div class="modal-body">
+                    <label for="renameInput" class="form-label">显示名</label>
+                    <input type="text" class="form-control" id="renameInput" required maxlength="64">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="/js/admin-common.js"></script>
+<script>
+    const PLATFORM_LABELS = {
+        android: 'Android',
+        ios: 'iOS',
+        windows: 'Windows',
+        mac: 'macOS',
+        linux: 'Linux'
+    };
+    const PAGE_SIZE = 20;
+    const CHART_COLORS = ['#3b5bfd', '#58d6c4', '#ffb078', '#8b7cff', '#f07178', '#6b7280'];
+
+    let currentAppId = '';
+    let currentAppName = '';
+    let currentPlatform = '';
+    let currentPage = 1;
+    let totalDevices = 0;
+    let versionChart;
+    let trendChart;
+    let renameModal;
+
+    document.addEventListener('DOMContentLoaded', async function () {
+        const user = await requireAdminAuth();
+        if (!user) {
+            return;
+        }
+        fillAuthBar();
+        renameModal = new bootstrap.Modal(document.getElementById('renameModal'));
+
+        document.getElementById('backBtn').addEventListener('click', showList);
+        document.getElementById('renameBtn').addEventListener('click', openRename);
+        document.getElementById('deleteBtn').addEventListener('click', deleteProduct);
+        document.getElementById('renameForm').addEventListener('submit', saveRename);
+        let accountTimer;
+        document.getElementById('accountFilter').addEventListener('input', function () {
+            clearTimeout(accountTimer);
+            accountTimer = setTimeout(function () {
+                currentPage = 1;
+                loadDevices();
+            }, 300);
+        });
+        document.getElementById('versionFilter').addEventListener('change', function () {
+            currentPage = 1;
+            loadDevices();
+        });
+        document.getElementById('prevPage').addEventListener('click', function () {
+            if (currentPage > 1) {
+                currentPage -= 1;
+                loadDevices();
+            }
+        });
+        document.getElementById('nextPage').addEventListener('click', function () {
+            if (currentPage * PAGE_SIZE < totalDevices) {
+                currentPage += 1;
+                loadDevices();
+            }
+        });
+        window.addEventListener('hashchange', syncFromHash);
+
+        await syncFromHash();
+    });
+
+    function statsUrl(appId, suffix, params) {
+        let url = '/api/stats/' + encodeURIComponent(appId) + suffix;
+        if (params) {
+            const query = new URLSearchParams(params);
+            const text = query.toString();
+            if (text) {
+                url += '?' + text;
+            }
+        }
+        return url;
+    }
+
+    async function syncFromHash() {
+        const hash = decodeURIComponent((location.hash || '').replace(/^#/, ''));
+        if (hash) {
+            await showDetail(hash);
+        } else {
+            await loadProducts();
+        }
+    }
+
+    async function loadProducts() {
+        showListLayout();
+        const grid = document.getElementById('productGrid');
+        grid.innerHTML = '<div class="text-center py-5 w-100"><div class="spinner-border" role="status"></div></div>';
+        try {
+            const data = await apiRequest('/api/stats/products', {headers: authHeaders()});
+            const products = data.products || [];
+            if (!products.length) {
+                grid.innerHTML = '<div class="surface stats-empty">还没有客户端上报。接入后会按 appId 自动建档。</div>';
+                return;
+            }
+            grid.innerHTML = products.map(function (product) {
+                const chips = (product.platforms || []).map(function (platform) {
+                    return '<span class="stats-chip">' + escapeHtml(PLATFORM_LABELS[platform] || platform) + '</span>';
+                }).join('');
+                return (
+                    '<button type="button" class="stats-product-card" data-app-id="' + escapeHtml(product.appId) + '">' +
+                    '<h2>' + escapeHtml(product.appName) + '</h2>' +
+                    '<div class="package-name">' + escapeHtml(product.appId) + '</div>' +
+                    '<div class="stats-product-meta">' +
+                    '<span>设备 <strong>' + product.deviceCount + '</strong></span>' +
+                    '<span>7 日活跃 <strong>' + product.active7d + '</strong></span>' +
+                    '</div>' +
+                    '<div class="stats-platform-chips">' + chips + '</div>' +
+                    '</button>'
+                );
+            }).join('');
+            grid.querySelectorAll('[data-app-id]').forEach(function (card) {
+                card.addEventListener('click', function () {
+                    location.hash = encodeURIComponent(card.getAttribute('data-app-id'));
+                });
+            });
+        } catch (error) {
+            grid.innerHTML = '<div class="surface stats-empty text-danger">' + escapeHtml(error.message) + '</div>';
+        }
+    }
+
+    function showList() {
+        if (location.hash) {
+            location.hash = '';
+            return;
+        }
+        loadProducts();
+    }
+
+    function showListLayout() {
+        currentAppId = '';
+        document.getElementById('listView').style.display = '';
+        document.getElementById('detailView').style.display = 'none';
+        document.getElementById('pageTitle').textContent = '客户端统计';
+        document.getElementById('pageSubtitle').style.display = 'none';
+        document.getElementById('moduleActions').style.display = 'none';
+    }
+
+    async function showDetail(appId) {
+        currentAppId = appId;
+        currentPlatform = '';
+        currentPage = 1;
+        document.getElementById('accountFilter').value = '';
+        document.getElementById('listView').style.display = 'none';
+        document.getElementById('detailView').style.display = '';
+        document.getElementById('moduleActions').style.display = 'flex';
+        await loadDetail();
+    }
+
+    function queryParams(extra) {
+        const params = Object.assign({}, extra || {});
+        if (currentPlatform) {
+            params.platform = currentPlatform;
+        }
+        return params;
+    }
+
+    async function loadDetail() {
+        try {
+            const data = await apiRequest(statsUrl(currentAppId, '/summary', queryParams()), {headers: authHeaders()});
+            const summary = data.summary;
+            currentAppName = summary.appName;
+            document.getElementById('pageTitle').textContent = summary.appName;
+            const subtitle = document.getElementById('pageSubtitle');
+            subtitle.textContent = summary.appId;
+            subtitle.style.display = '';
+
+            renderKpis(summary);
+            renderPlatformTabs(summary.byPlatform || []);
+            fillVersionFilter(summary.byVersion || []);
+            renderVersionChart(summary.byVersion || []);
+            await loadTrend();
+            await loadDevices();
+        } catch (error) {
+            alert(error.message || '加载详情失败');
+            showList();
+        }
+    }
+
+    function renderKpis(summary) {
+        const items = [
+            ['总设备', summary.totalDevices],
+            ['日活', summary.active1d],
+            ['周活', summary.active7d],
+            ['月活', summary.active30d],
+            ['去重账号', summary.uniqueAccounts]
+        ];
+        document.getElementById('kpiGrid').innerHTML = items.map(function (item) {
+            return '<div class="stats-kpi"><span class="label">' + item[0] + '</span><span class="value">' + item[1] + '</span></div>';
+        }).join('');
+    }
+
+    function renderPlatformTabs(byPlatform) {
+        const tabs = ['<button type="button" class="btn btn-sm' + (currentPlatform ? '' : ' active') + '" data-platform="">全部</button>'];
+        byPlatform.forEach(function (row) {
+            const active = currentPlatform === row.platform ? ' active' : '';
+            tabs.push(
+                '<button type="button" class="btn btn-sm' + active + '" data-platform="' + escapeHtml(row.platform) + '">' +
+                escapeHtml(PLATFORM_LABELS[row.platform] || row.platform) + ' · ' + row.count +
+                '</button>'
+            );
+        });
+        const host = document.getElementById('platformTabs');
+        host.innerHTML = tabs.join('');
+        host.querySelectorAll('[data-platform]').forEach(function (btn) {
+            btn.addEventListener('click', async function () {
+                currentPlatform = btn.getAttribute('data-platform') || '';
+                currentPage = 1;
+                await loadDetail();
+            });
+        });
+    }
+
+    function fillVersionFilter(byVersion) {
+        const select = document.getElementById('versionFilter');
+        const selected = select.value;
+        select.innerHTML = '<option value="">全部版本</option>' + byVersion.map(function (row) {
+            const value = row.versionName || '';
+            return '<option value="' + escapeHtml(value) + '">' + escapeHtml(value || '未知') + ' (' + row.count + ')</option>';
+        }).join('');
+        if (selected) {
+            select.value = selected;
+        }
+    }
+
+    function destroyChart(chart) {
+        if (chart) {
+            chart.destroy();
+        }
+    }
+
+    function renderVersionChart(byVersion) {
+        destroyChart(versionChart);
+        const labels = byVersion.map(function (row) { return row.versionName || '未知'; });
+        const values = byVersion.map(function (row) { return row.count; });
+        const ctx = document.getElementById('versionChart');
+        versionChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels.length ? labels : ['暂无数据'],
+                datasets: [{
+                    data: values.length ? values : [1],
+                    backgroundColor: labels.length ? CHART_COLORS : ['#d1d5db'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {position: 'bottom', labels: {boxWidth: 12}}
+                }
+            }
+        });
+    }
+
+    async function loadTrend() {
+        const data = await apiRequest(statsUrl(currentAppId, '/trend', queryParams({days: 30})), {headers: authHeaders()});
+        const series = (data.trend && data.trend.series) || [];
+        destroyChart(trendChart);
+        trendChart = new Chart(document.getElementById('trendChart'), {
+            type: 'line',
+            data: {
+                labels: series.map(function (row) { return row.date.slice(5); }),
+                datasets: [{
+                    label: '活跃设备',
+                    data: series.map(function (row) { return row.activeDevices; }),
+                    borderColor: '#3b5bfd',
+                    backgroundColor: 'rgba(59, 91, 253, 0.12)',
+                    fill: true,
+                    tension: 0.35,
+                    pointRadius: 2,
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                scales: {
+                    y: {beginAtZero: true, ticks: {precision: 0}},
+                    x: {grid: {display: false}}
+                },
+                plugins: {legend: {display: false}}
+            }
+        });
+    }
+
+    async function loadDevices() {
+        const params = queryParams({
+            page: currentPage,
+            pageSize: PAGE_SIZE
+        });
+        const account = document.getElementById('accountFilter').value.trim();
+        const version = document.getElementById('versionFilter').value;
+        if (account) {
+            params.account = account;
+        }
+        if (version) {
+            params.version = version;
+        }
+
+        const data = await apiRequest(statsUrl(currentAppId, '/devices', params), {headers: authHeaders()});
+        totalDevices = data.total || 0;
+        const rows = data.devices || [];
+        const body = document.getElementById('deviceTable');
+        if (!rows.length) {
+            body.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">没有匹配的设备</td></tr>';
+        } else {
+            body.innerHTML = rows.map(function (device) {
+                return '<tr>' +
+                    '<td>' + escapeHtml(device.account || '未登录') + '</td>' +
+                    '<td>' + escapeHtml(PLATFORM_LABELS[device.platform] || device.platform) + '</td>' +
+                    '<td>' + escapeHtml(device.versionName || '—') + '</td>' +
+                    '<td>' + escapeHtml(device.osVersion || '—') + '</td>' +
+                    '<td>' + escapeHtml(device.deviceModel || '—') + '</td>' +
+                    '<td>' + escapeHtml(device.ip || '—') + '</td>' +
+                    '<td>' + escapeHtml(formatTime(device.firstSeen)) + '</td>' +
+                    '<td>' + escapeHtml(formatTime(device.lastSeen)) + '</td>' +
+                    '</tr>';
+            }).join('');
+        }
+
+        const from = totalDevices === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+        const to = Math.min(currentPage * PAGE_SIZE, totalDevices);
+        document.getElementById('pageInfo').textContent = '共 ' + totalDevices + ' 台 · ' + from + '-' + to;
+        document.getElementById('prevPage').disabled = currentPage <= 1;
+        document.getElementById('nextPage').disabled = currentPage * PAGE_SIZE >= totalDevices;
+    }
+
+    function formatTime(value) {
+        if (!value) {
+            return '—';
+        }
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return value;
+        }
+        const pad = function (n) { return String(n).padStart(2, '0'); };
+        return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) +
+            ' ' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+    }
+
+    function openRename() {
+        document.getElementById('renameInput').value = currentAppName;
+        renameModal.show();
+    }
+
+    async function saveRename(event) {
+        event.preventDefault();
+        const appName = document.getElementById('renameInput').value.trim();
+        if (!appName) {
+            return;
+        }
+        try {
+            await apiRequest(statsUrl(currentAppId, ''), {
+                method: 'PUT',
+                headers: authHeaders({'Content-Type': 'application/json'}),
+                body: JSON.stringify({appName: appName})
+            });
+            renameModal.hide();
+            await loadDetail();
+        } catch (error) {
+            alert(error.message || '改名失败');
+        }
+    }
+
+    async function deleteProduct() {
+        if (!confirm('将删除该产品的全部统计数据，确定继续？')) {
+            return;
+        }
+        try {
+            await apiRequest(statsUrl(currentAppId, ''), {
+                method: 'DELETE',
+                headers: authHeaders()
+            });
+            location.hash = '';
+        } catch (error) {
+            alert(error.message || '删除失败');
+        }
+    }
+</script>
+</body>
+</html>

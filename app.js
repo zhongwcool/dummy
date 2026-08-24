@@ -8,6 +8,7 @@ const isIp = require('is-ip');
 const ipaddr = require('ipaddr.js');
 const app = express();
 const PORT = process.env.PORT || 5000;
+const statsDb = require('./utils/statsDb');
 // 获取当前环境，如果未设置则默认为开发环境
 const NODE_ENV = process.env.NODE_ENV || 'production';
 
@@ -119,6 +120,7 @@ async function getExternalIPAddress(callback) {
 }
 
 // 中间件
+app.set('trust proxy', true);
 app.use(cors()); // 允许所有跨域请求
 app.use(express.json()); // 解析 JSON 请求体
 app.use(express.urlencoded({extended: true})); // 解析 URL 编码的请求体
@@ -151,6 +153,10 @@ app.get('/admin/images', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin-images.html'));
 });
 
+app.get('/admin/stats', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin-stats.html'));
+});
+
 // 静态文件服务
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -159,12 +165,14 @@ const userRouter = require('./routes/users');
 const authRouter = require('./routes/auth');
 const updateRouter = require('./routes/update');
 const imageBedRouter = require('./routes/imageBed');
+const statsRouter = require('./routes/stats');
 
 // 使用路由模块
 app.use('/api/users', userRouter);
 app.use('/api/auth', authRouter);
 app.use('/api/update', updateRouter);
 app.use('/api/image', imageBedRouter);
+app.use('/api/stats', statsRouter);
 
 // 404 处理
 app.use((req, res) => {
@@ -177,8 +185,21 @@ app.use((err, req, res, next) => {
     res.status(500).json({error: 'Something went wrong!'});
 });
 
+function scheduleStatsMaintenance() {
+    const run = () => {
+        try {
+            statsDb.runMaintenance();
+        } catch (error) {
+            console.error('统计维护任务失败:', error);
+        }
+    };
+    run();
+    setInterval(run, 60 * 60 * 1000);
+}
+
 // 启动服务器
 app.listen(PORT, () => {
+    scheduleStatsMaintenance();
     const localIPs = getLocalIPAddress();
     getExternalIPAddress((ipAddress) => {
         console.log(`Server running on http://${ipAddress}:${PORT}`);
