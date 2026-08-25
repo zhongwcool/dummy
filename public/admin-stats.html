@@ -472,8 +472,11 @@
         }
     }
 
-    async function deleteProduct() {
+    async function deleteProduct(event) {
         if (!confirm('将删除该产品的全部统计数据，确定继续？')) {
+            if (event && event.currentTarget) {
+                event.currentTarget.blur();
+            }
             return;
         }
         try {

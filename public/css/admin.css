@@ -76,17 +76,43 @@ body::before {
 }
 
 .admin-actions .btn:hover,
-.admin-actions .btn:focus,
+.admin-actions .btn:focus-visible,
 .stats-module-actions .btn:hover,
-.stats-module-actions .btn:focus {
+.stats-module-actions .btn:focus-visible {
     transform: translateY(-1px);
     box-shadow: var(--shadow-mid);
+}
+
+.admin-actions .btn:focus:not(:focus-visible),
+.stats-module-actions .btn:focus:not(:focus-visible) {
+    box-shadow: var(--shadow-low);
+    outline: none;
 }
 
 .admin-actions .btn:active,
 .stats-module-actions .btn:active {
     transform: translateY(0);
     box-shadow: var(--shadow-low);
+}
+
+.admin-actions .btn-outline-danger,
+.stats-module-actions .btn-outline-danger {
+    background-color: #dc3545;
+    color: #fff;
+}
+
+.admin-actions .btn-outline-danger:hover,
+.admin-actions .btn-outline-danger:focus-visible,
+.stats-module-actions .btn-outline-danger:hover,
+.stats-module-actions .btn-outline-danger:focus-visible {
+    background-color: #b02a37;
+    color: #fff;
+}
+
+.admin-actions .btn-outline-danger:focus:not(:focus-visible),
+.stats-module-actions .btn-outline-danger:focus:not(:focus-visible) {
+    background-color: #dc3545;
+    color: #fff;
 }
 
 .dashboard-shell {
