@@ -120,6 +120,11 @@ function getDb() {
             value TEXT
         );
     `);
+    db.exec(`
+        UPDATE devices
+        SET ip = substr(ip, instr(lower(ip), '::ffff:') + 7)
+        WHERE ip IS NOT NULL AND lower(ip) LIKE '%::ffff:%'
+    `);
 
     return db;
 }

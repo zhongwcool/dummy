@@ -29,16 +29,42 @@ function toVersionCode(value) {
     return Number.isFinite(parsed) ? parsed : null;
 }
 
+/**
+ * 将 IPv4 映射地址写成纯 IPv4。
+ * 例如 ::ffff:116.147.147.123 → 116.147.147.123
+ */
+function normalizeClientIp(ip) {
+    if (ip == null) {
+        return '';
+    }
+    let value = String(ip).trim();
+    if (!value) {
+        return '';
+    }
+    if (value.startsWith('[') && value.endsWith(']')) {
+        value = value.slice(1, -1);
+    }
+    const zoneIndex = value.indexOf('%');
+    if (zoneIndex !== -1) {
+        value = value.slice(0, zoneIndex);
+    }
+    const mapped = value.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i);
+    if (mapped) {
+        return mapped[1];
+    }
+    return value;
+}
+
 function clientIp(req) {
     const forwarded = req.headers['x-forwarded-for'];
     if (typeof forwarded === 'string' && forwarded.trim()) {
-        return forwarded.split(',')[0].trim();
+        return normalizeClientIp(forwarded.split(',')[0].trim());
     }
     const realIp = req.headers['x-real-ip'];
     if (typeof realIp === 'string' && realIp.trim()) {
-        return realIp.trim();
+        return normalizeClientIp(realIp.trim());
     }
-    return req.ip || req.socket?.remoteAddress || '';
+    return normalizeClientIp(req.ip || req.socket?.remoteAddress || '');
 }
 
 function pruneRateBuckets(now) {
