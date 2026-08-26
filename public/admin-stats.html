@@ -61,6 +61,16 @@
         </div>
         <div class="table-responsive surface user-panel stats-device-panel">
             <table class="table table-hover mb-0 stats-device-table">
+                <colgroup>
+                    <col class="col-account">
+                    <col class="col-platform">
+                    <col class="col-version">
+                    <col class="col-os">
+                    <col class="col-model">
+                    <col class="col-ip">
+                    <col class="col-time">
+                    <col class="col-time">
+                </colgroup>
                 <thead>
                 <tr>
                     <th>账号</th>
@@ -416,14 +426,14 @@
         } else {
             body.innerHTML = rows.map(function (device) {
                 return '<tr>' +
-                    '<td>' + escapeHtml(device.account || '未登录') + '</td>' +
-                    '<td>' + escapeHtml(PLATFORM_LABELS[device.platform] || device.platform) + '</td>' +
-                    '<td>' + escapeHtml(device.versionName || '—') + '</td>' +
-                    '<td>' + escapeHtml(device.osVersion || '—') + '</td>' +
-                    '<td>' + escapeHtml(device.deviceModel || '—') + '</td>' +
-                    '<td>' + escapeHtml(device.ip || '—') + '</td>' +
-                    '<td>' + escapeHtml(formatTime(device.firstSeen)) + '</td>' +
-                    '<td>' + escapeHtml(formatTime(device.lastSeen)) + '</td>' +
+                    deviceCell(device.account || '未登录') +
+                    deviceCell(PLATFORM_LABELS[device.platform] || device.platform) +
+                    deviceCell(device.versionName || '—') +
+                    deviceCell(device.osVersion || '—') +
+                    deviceCell(device.deviceModel || '—') +
+                    deviceCell(device.ip || '—') +
+                    deviceCell(formatTime(device.firstSeen)) +
+                    deviceCell(formatTime(device.lastSeen)) +
                     '</tr>';
             }).join('');
         }
@@ -433,6 +443,11 @@
         document.getElementById('pageInfo').textContent = '共 ' + totalDevices + ' 台 · ' + from + '-' + to;
         document.getElementById('prevPage').disabled = currentPage <= 1;
         document.getElementById('nextPage').disabled = currentPage * PAGE_SIZE >= totalDevices;
+    }
+
+    function deviceCell(value) {
+        const text = value || '—';
+        return '<td title="' + escapeHtml(text) + '">' + escapeHtml(text) + '</td>';
     }
 
     function formatTime(value) {

@@ -1296,10 +1296,21 @@ body::before {
 
 .stats-device-table {
     width: 100%;
+    table-layout: fixed;
 }
+
+.stats-device-table col.col-account { width: 16%; }
+.stats-device-table col.col-platform { width: 8%; }
+.stats-device-table col.col-version { width: 12%; }
+.stats-device-table col.col-os { width: 10%; }
+.stats-device-table col.col-model { width: 18%; }
+.stats-device-table col.col-ip { width: 12%; }
+.stats-device-table col.col-time { width: 12%; }
 
 .stats-device-table th,
 .stats-device-table td {
+    overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
 }
 
