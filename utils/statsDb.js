@@ -319,15 +319,9 @@ function getSummary(appId, platform) {
     };
 }
 
-function listDevices(options) {
-    const conn = getDb();
-    const appId = options.appId;
-    if (!getProduct(appId)) {
-        return null;
-    }
-
+function deviceListFilter(options) {
     const where = ['app_id = ?'];
-    const params = [appId];
+    const params = [options.appId];
 
     const filter = platformFilter(options.platform);
     if (filter.sql) {
@@ -343,10 +337,60 @@ function listDevices(options) {
         params.push(`%${options.account}%`);
     }
 
+    return {whereSql: where.join(' AND '), params};
+}
+
+function accountGroupKeySql() {
+    return `CASE WHEN account IS NOT NULL AND TRIM(account) != '' THEN 'a:' || TRIM(account) ELSE 'd:' || device_id END`;
+}
+
+function listDevices(options) {
+    const conn = getDb();
+    const appId = options.appId;
+    if (!getProduct(appId)) {
+        return null;
+    }
+
+    const groupBy = options.groupBy === 'device' ? 'device' : 'account';
     const page = Math.max(1, parseInt(options.page, 10) || 1);
     const pageSize = Math.min(100, Math.max(1, parseInt(options.pageSize, 10) || 20));
-    const whereSql = where.join(' AND ');
-    const total = conn.prepare(`SELECT COUNT(*) AS n FROM devices WHERE ${whereSql}`).get(...params).n;
+    const {whereSql, params} = deviceListFilter(options);
+
+    if (groupBy === 'device') {
+        const total = conn.prepare(`SELECT COUNT(*) AS n FROM devices WHERE ${whereSql}`).get(...params).n;
+        const devices = conn.prepare(`
+            SELECT
+                app_id AS appId,
+                device_id AS deviceId,
+                platform,
+                account,
+                version_name AS versionName,
+                version_code AS versionCode,
+                os_version AS osVersion,
+                device_model AS deviceModel,
+                arch,
+                locale,
+                channel,
+                ip,
+                first_seen AS firstSeen,
+                last_seen AS lastSeen,
+                report_count AS reportCount,
+                1 AS deviceCount
+            FROM devices
+            WHERE ${whereSql}
+            ORDER BY last_seen DESC
+            LIMIT ? OFFSET ?
+        `).all(...params, pageSize, (page - 1) * pageSize);
+
+        return {total, page, pageSize, groupBy, devices};
+    }
+
+    const groupKeySql = accountGroupKeySql();
+    const total = conn.prepare(`
+        SELECT COUNT(*) AS n FROM (
+            SELECT 1 FROM devices WHERE ${whereSql} GROUP BY ${groupKeySql}
+        ) grouped_accounts
+    `).get(...params).n;
     const devices = conn.prepare(`
         SELECT
             app_id AS appId,
@@ -361,16 +405,41 @@ function listDevices(options) {
             locale,
             channel,
             ip,
-            first_seen AS firstSeen,
-            last_seen AS lastSeen,
-            report_count AS reportCount
-        FROM devices
-        WHERE ${whereSql}
-        ORDER BY last_seen DESC
+            firstSeen,
+            lastSeen,
+            report_count AS reportCount,
+            deviceCount
+        FROM (
+            SELECT
+                app_id,
+                device_id,
+                platform,
+                account,
+                version_name,
+                version_code,
+                os_version,
+                device_model,
+                arch,
+                locale,
+                channel,
+                ip,
+                report_count,
+                MIN(first_seen) OVER (PARTITION BY ${groupKeySql}) AS firstSeen,
+                MAX(last_seen) OVER (PARTITION BY ${groupKeySql}) AS lastSeen,
+                COUNT(*) OVER (PARTITION BY ${groupKeySql}) AS deviceCount,
+                ROW_NUMBER() OVER (
+                    PARTITION BY ${groupKeySql}
+                    ORDER BY last_seen DESC, device_id DESC
+                ) AS rn
+            FROM devices
+            WHERE ${whereSql}
+        ) grouped
+        WHERE rn = 1
+        ORDER BY lastSeen DESC
         LIMIT ? OFFSET ?
     `).all(...params, pageSize, (page - 1) * pageSize);
 
-    return {total, page, pageSize, devices};
+    return {total, page, pageSize, groupBy, devices};
 }
 
 function getTrend(appId, days, platform) {
