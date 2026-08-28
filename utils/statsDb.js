@@ -107,6 +107,7 @@ function getDb() {
             PRIMARY KEY (app_id, device_id)
         );
         CREATE INDEX IF NOT EXISTS idx_devices_seen ON devices(app_id, last_seen);
+        CREATE INDEX IF NOT EXISTS idx_devices_account ON devices(app_id, account);
         CREATE TABLE IF NOT EXISTS daily_stats (
             app_id TEXT NOT NULL,
             date TEXT NOT NULL,
@@ -125,8 +126,81 @@ function getDb() {
         SET ip = substr(ip, instr(lower(ip), '::ffff:') + 7)
         WHERE ip IS NOT NULL AND lower(ip) LIKE '%::ffff:%'
     `);
+    dedupeDuplicateAccounts(db);
+    db.exec(`
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_devices_account_unique
+        ON devices(app_id, account)
+        WHERE account IS NOT NULL AND TRIM(account) != ''
+    `);
 
     return db;
+}
+
+function selectDeviceRow(conn, appId, deviceId) {
+    return conn.prepare(`
+        SELECT device_id AS deviceId, counted_date AS countedDate,
+               first_seen AS firstSeen, report_count AS reportCount
+        FROM devices
+        WHERE app_id = ? AND device_id = ?
+    `).get(appId, deviceId) || null;
+}
+
+function selectAccountRow(conn, appId, account) {
+    return conn.prepare(`
+        SELECT device_id AS deviceId, counted_date AS countedDate,
+               first_seen AS firstSeen, report_count AS reportCount
+        FROM devices
+        WHERE app_id = ? AND account IS NOT NULL AND TRIM(account) != '' AND TRIM(account) = ?
+        ORDER BY last_seen DESC, device_id DESC
+        LIMIT 1
+    `).get(appId, account) || null;
+}
+
+function dedupeDuplicateAccounts(conn) {
+    const groups = conn.prepare(`
+        SELECT app_id AS appId, TRIM(account) AS account
+        FROM devices
+        WHERE account IS NOT NULL AND TRIM(account) != ''
+        GROUP BY app_id, TRIM(account)
+        HAVING COUNT(*) > 1
+    `).all();
+    if (!groups.length) {
+        return;
+    }
+
+    const selectRows = conn.prepare(`
+        SELECT device_id AS deviceId, first_seen AS firstSeen, report_count AS reportCount
+        FROM devices
+        WHERE app_id = ? AND TRIM(account) = ?
+        ORDER BY last_seen DESC, device_id DESC
+    `);
+    const deleteRow = conn.prepare('DELETE FROM devices WHERE app_id = ? AND device_id = ?');
+    const updateKept = conn.prepare(`
+        UPDATE devices SET first_seen = ?, report_count = ?
+        WHERE app_id = ? AND device_id = ?
+    `);
+
+    withTransaction(conn, () => {
+        for (const group of groups) {
+            const rows = selectRows.all(group.appId, group.account);
+            if (rows.length < 2) {
+                continue;
+            }
+            const keep = rows[0];
+            let minFirst = keep.firstSeen;
+            let reports = 0;
+            for (const row of rows) {
+                reports += Number(row.reportCount) || 0;
+                if (row.firstSeen && row.firstSeen < minFirst) {
+                    minFirst = row.firstSeen;
+                }
+            }
+            for (let i = 1; i < rows.length; i++) {
+                deleteRow.run(group.appId, rows[i].deviceId);
+            }
+            updateKept.run(minFirst, reports, group.appId, keep.deviceId);
+        }
+    });
 }
 
 function withTransaction(conn, fn) {
@@ -161,6 +235,7 @@ function upsertReport(payload) {
     const deviceId = payload.deviceId;
     const platform = payload.platform;
     const appName = (hasField(payload, 'appName') && payload.appName) ? payload.appName : appNameFromId(appId);
+    const loggedIn = hasField(payload, 'account') && payload.account != null && String(payload.account).trim() !== '';
 
     withTransaction(conn, () => {
         conn.prepare(`
@@ -169,11 +244,22 @@ function upsertReport(payload) {
             ON CONFLICT(app_id) DO NOTHING
         `).run(appId, appName, now);
 
-        const existing = conn.prepare(
-            'SELECT counted_date FROM devices WHERE app_id = ? AND device_id = ?'
-        ).get(appId, deviceId);
+        const deviceRow = selectDeviceRow(conn, appId, deviceId);
+        let keepRow = deviceRow;
+        let extraRow = null;
 
-        if (!existing) {
+        if (loggedIn) {
+            const accountRow = selectAccountRow(conn, appId, String(payload.account).trim());
+            if (accountRow && accountRow.deviceId !== deviceId) {
+                keepRow = accountRow;
+                extraRow = deviceRow;
+                if (extraRow) {
+                    conn.prepare('DELETE FROM devices WHERE app_id = ? AND device_id = ?').run(appId, deviceId);
+                }
+            }
+        }
+
+        if (!keepRow) {
             conn.prepare(`
                 INSERT INTO devices (
                     app_id, device_id, platform, account, version_name, version_code,
@@ -198,26 +284,41 @@ function upsertReport(payload) {
                 today
             );
         } else {
+            const extraCount = extraRow ? Number(extraRow.reportCount) || 0 : 0;
+            const reportCount = (Number(keepRow.reportCount) || 0) + extraCount + 1;
+            let firstSeen = keepRow.firstSeen || now;
+            if (extraRow && extraRow.firstSeen && extraRow.firstSeen < firstSeen) {
+                firstSeen = extraRow.firstSeen;
+            }
+
             const sets = [
+                'device_id = ?',
                 'platform = ?',
                 'ip = ?',
                 'last_seen = ?',
-                'report_count = report_count + 1'
+                'report_count = ?',
+                'first_seen = ?'
             ];
-            const values = [platform, payload.ip, now];
+            const values = [deviceId, platform, payload.ip, now, reportCount, firstSeen];
             for (const [key, column] of OPTIONAL_DEVICE_FIELDS) {
                 if (hasField(payload, key)) {
                     sets.push(`${column} = ?`);
                     values.push(payload[key]);
                 }
             }
-            values.push(appId, deviceId);
+            values.push(appId, keepRow.deviceId);
             conn.prepare(
                 `UPDATE devices SET ${sets.join(', ')} WHERE app_id = ? AND device_id = ?`
             ).run(...values);
         }
 
-        if (!existing || existing.counted_date !== today) {
+        const alreadyCounted = Boolean(
+            keepRow && (
+                keepRow.countedDate === today ||
+                (extraRow && extraRow.countedDate === today)
+            )
+        );
+        if (!alreadyCounted) {
             const current = conn.prepare(`
                 SELECT platform, COALESCE(version_name, '') AS version_name
                 FROM devices
@@ -230,10 +331,11 @@ function upsertReport(payload) {
                 ON CONFLICT(app_id, date, platform, version_name)
                 DO UPDATE SET active_devices = active_devices + 1
             `).run(appId, today, current.platform, current.version_name);
-
-            conn.prepare(`
-                UPDATE devices SET counted_date = ? WHERE app_id = ? AND device_id = ?
-            `).run(today, appId, deviceId);
+        }
+        if (!keepRow || !alreadyCounted || keepRow.countedDate !== today) {
+            conn.prepare(
+                'UPDATE devices SET counted_date = ? WHERE app_id = ? AND device_id = ?'
+            ).run(today, appId, deviceId);
         }
     });
 }
@@ -319,9 +421,15 @@ function getSummary(appId, platform) {
     };
 }
 
-function deviceListFilter(options) {
+function listDevices(options) {
+    const conn = getDb();
+    const appId = options.appId;
+    if (!getProduct(appId)) {
+        return null;
+    }
+
     const where = ['app_id = ?'];
-    const params = [options.appId];
+    const params = [appId];
 
     const filter = platformFilter(options.platform);
     if (filter.sql) {
@@ -337,60 +445,10 @@ function deviceListFilter(options) {
         params.push(`%${options.account}%`);
     }
 
-    return {whereSql: where.join(' AND '), params};
-}
-
-function accountGroupKeySql() {
-    return `CASE WHEN account IS NOT NULL AND TRIM(account) != '' THEN 'a:' || TRIM(account) ELSE 'd:' || device_id END`;
-}
-
-function listDevices(options) {
-    const conn = getDb();
-    const appId = options.appId;
-    if (!getProduct(appId)) {
-        return null;
-    }
-
-    const groupBy = options.groupBy === 'device' ? 'device' : 'account';
     const page = Math.max(1, parseInt(options.page, 10) || 1);
     const pageSize = Math.min(100, Math.max(1, parseInt(options.pageSize, 10) || 20));
-    const {whereSql, params} = deviceListFilter(options);
-
-    if (groupBy === 'device') {
-        const total = conn.prepare(`SELECT COUNT(*) AS n FROM devices WHERE ${whereSql}`).get(...params).n;
-        const devices = conn.prepare(`
-            SELECT
-                app_id AS appId,
-                device_id AS deviceId,
-                platform,
-                account,
-                version_name AS versionName,
-                version_code AS versionCode,
-                os_version AS osVersion,
-                device_model AS deviceModel,
-                arch,
-                locale,
-                channel,
-                ip,
-                first_seen AS firstSeen,
-                last_seen AS lastSeen,
-                report_count AS reportCount,
-                1 AS deviceCount
-            FROM devices
-            WHERE ${whereSql}
-            ORDER BY last_seen DESC
-            LIMIT ? OFFSET ?
-        `).all(...params, pageSize, (page - 1) * pageSize);
-
-        return {total, page, pageSize, groupBy, devices};
-    }
-
-    const groupKeySql = accountGroupKeySql();
-    const total = conn.prepare(`
-        SELECT COUNT(*) AS n FROM (
-            SELECT 1 FROM devices WHERE ${whereSql} GROUP BY ${groupKeySql}
-        ) grouped_accounts
-    `).get(...params).n;
+    const whereSql = where.join(' AND ');
+    const total = conn.prepare(`SELECT COUNT(*) AS n FROM devices WHERE ${whereSql}`).get(...params).n;
     const devices = conn.prepare(`
         SELECT
             app_id AS appId,
@@ -405,41 +463,16 @@ function listDevices(options) {
             locale,
             channel,
             ip,
-            firstSeen,
-            lastSeen,
-            report_count AS reportCount,
-            deviceCount
-        FROM (
-            SELECT
-                app_id,
-                device_id,
-                platform,
-                account,
-                version_name,
-                version_code,
-                os_version,
-                device_model,
-                arch,
-                locale,
-                channel,
-                ip,
-                report_count,
-                MIN(first_seen) OVER (PARTITION BY ${groupKeySql}) AS firstSeen,
-                MAX(last_seen) OVER (PARTITION BY ${groupKeySql}) AS lastSeen,
-                COUNT(*) OVER (PARTITION BY ${groupKeySql}) AS deviceCount,
-                ROW_NUMBER() OVER (
-                    PARTITION BY ${groupKeySql}
-                    ORDER BY last_seen DESC, device_id DESC
-                ) AS rn
-            FROM devices
-            WHERE ${whereSql}
-        ) grouped
-        WHERE rn = 1
-        ORDER BY lastSeen DESC
+            first_seen AS firstSeen,
+            last_seen AS lastSeen,
+            report_count AS reportCount
+        FROM devices
+        WHERE ${whereSql}
+        ORDER BY last_seen DESC
         LIMIT ? OFFSET ?
     `).all(...params, pageSize, (page - 1) * pageSize);
 
-    return {total, page, pageSize, groupBy, devices};
+    return {total, page, pageSize, devices};
 }
 
 function getTrend(appId, days, platform) {

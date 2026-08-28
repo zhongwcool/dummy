@@ -58,10 +58,6 @@
             <select class="form-select form-select-sm" id="versionFilter">
                 <option value="">全部版本</option>
             </select>
-            <div class="stats-view-toggle" id="groupByToggle" role="group" aria-label="列表视图">
-                <button type="button" class="btn btn-sm active" data-group-by="account">按账号</button>
-                <button type="button" class="btn btn-sm" data-group-by="device">按设备</button>
-            </div>
         </div>
         <div class="table-responsive surface user-panel stats-device-panel">
             <table class="table table-hover mb-0 stats-device-table">
@@ -138,7 +134,6 @@
     let currentAppId = '';
     let currentAppName = '';
     let currentPlatform = '';
-    let currentGroupBy = 'account';
     let currentPage = 1;
     let totalDevices = 0;
     let versionChart;
@@ -166,19 +161,6 @@
             }, 300);
         });
         document.getElementById('versionFilter').addEventListener('change', function () {
-            currentPage = 1;
-            loadDevices();
-        });
-        document.getElementById('groupByToggle').addEventListener('click', function (event) {
-            const btn = event.target.closest('[data-group-by]');
-            if (!btn) {
-                return;
-            }
-            const mode = btn.getAttribute('data-group-by') === 'device' ? 'device' : 'account';
-            if (mode === currentGroupBy) {
-                return;
-            }
-            setGroupBy(mode);
             currentPage = 1;
             loadDevices();
         });
@@ -278,7 +260,6 @@
         currentAppId = appId;
         currentPlatform = '';
         currentPage = 1;
-        setGroupBy('account');
         document.getElementById('accountFilter').value = '';
         document.getElementById('listView').style.display = 'none';
         document.getElementById('detailView').style.display = '';
@@ -425,8 +406,7 @@
     async function loadDevices() {
         const params = queryParams({
             page: currentPage,
-            pageSize: PAGE_SIZE,
-            groupBy: currentGroupBy
+            pageSize: PAGE_SIZE
         });
         const account = document.getElementById('accountFilter').value.trim();
         const version = document.getElementById('versionFilter').value;
@@ -446,7 +426,7 @@
         } else {
             body.innerHTML = rows.map(function (device) {
                 return '<tr>' +
-                    accountCell(device) +
+                    deviceCell(device.account || '未登录') +
                     deviceCell(PLATFORM_LABELS[device.platform] || device.platform) +
                     deviceCell(device.versionName || '—') +
                     deviceCell(device.osVersion || '—') +
@@ -460,33 +440,9 @@
 
         const from = totalDevices === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
         const to = Math.min(currentPage * PAGE_SIZE, totalDevices);
-        const unit = currentGroupBy === 'device' ? '台' : '条';
-        document.getElementById('pageInfo').textContent = '共 ' + totalDevices + ' ' + unit + ' · ' + from + '-' + to;
+        document.getElementById('pageInfo').textContent = '共 ' + totalDevices + ' 条 · ' + from + '-' + to;
         document.getElementById('prevPage').disabled = currentPage <= 1;
         document.getElementById('nextPage').disabled = currentPage * PAGE_SIZE >= totalDevices;
-    }
-
-    function setGroupBy(mode) {
-        currentGroupBy = mode === 'device' ? 'device' : 'account';
-        document.querySelectorAll('#groupByToggle [data-group-by]').forEach(function (btn) {
-            btn.classList.toggle('active', btn.getAttribute('data-group-by') === currentGroupBy);
-        });
-    }
-
-    function accountCell(device) {
-        const name = device.account || '未登录';
-        const count = Number(device.deviceCount) || 1;
-        if (currentGroupBy !== 'account' || count <= 1) {
-            return deviceCell(name);
-        }
-        return (
-            '<td class="stats-account-td" title="' + escapeHtml(name) + ' · ' + count + ' 台设备">' +
-            '<span class="stats-account-cell">' +
-            '<span class="stats-account-name">' + escapeHtml(name) + '</span>' +
-            '<span class="stats-chip">' + count + ' 台</span>' +
-            '</span>' +
-            '</td>'
-        );
     }
 
     function deviceCell(value) {

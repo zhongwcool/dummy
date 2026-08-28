@@ -19,7 +19,7 @@ Node.js + Express 实现简易测试api
 
 管理页：`/admin/stats`（需 admin 登录）
 
-数据存在 SQLite 文件 `data/stats.db`（使用 Node.js 内置 `node:sqlite`，无需安装 `better-sqlite3`）。只保留每台设备的最后一条状态（按 `appId + deviceId` 覆盖更新），不存上报流水。首次上报会按 `appId` 自动建档；平台（Android / iOS / Windows / macOS / Linux）是设备字段，不编进产品 ID。
+数据存在 SQLite 文件 `data/stats.db`（使用 Node.js 内置 `node:sqlite`，无需安装 `better-sqlite3`）。已登录账号按 `appId + account` 覆盖为一条记录（保留该账号最早的首次活跃，其余字段取最后一次上报）；未登录仍按 `appId + deviceId` 各留一行。不存上报流水。首次上报会按 `appId` 自动建档；平台（Android / iOS / Windows / macOS / Linux）是设备字段，不编进产品 ID。
 
 ### 客户端上报
 
@@ -51,7 +51,7 @@ Node.js + Express 实现简易测试api
 
 - `GET /api/stats/products` - 产品列表
 - `GET /api/stats/:appId/summary` - 概览（可加 `?platform=`）
-- `GET /api/stats/:appId/devices` - 设备明细（`platform` / `version` / `account` / `page` / `pageSize`）
+- `GET /api/stats/:appId/devices` - 明细（`platform` / `version` / `account` / `page` / `pageSize`）
 - `GET /api/stats/:appId/trend?days=30` - 日活趋势
 - `PUT /api/stats/:appId` - 修改显示名 `{ "appName": "..." }`
 - `DELETE /api/stats/:appId` - 删除该产品全部统计

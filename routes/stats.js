@@ -273,7 +273,7 @@ router.get('/:appId/summary', verifyToken, checkRole(['admin']), (req, res) => {
 
 /**
  * @route   GET /api/stats/:appId/devices
- * @desc    设备明细分页（默认按账号合并，groupBy=device 可按设备展开）
+ * @desc    明细分页（已登录按账号各一行，未登录按设备各一行）
  * @access  Private (admin)
  */
 router.get('/:appId/devices', verifyToken, checkRole(['admin']), (req, res) => {
@@ -292,7 +292,6 @@ router.get('/:appId/devices', verifyToken, checkRole(['admin']), (req, res) => {
             platform,
             version: clip(req.query.version, 64),
             account: clip(req.query.account, 128),
-            groupBy: clip(req.query.groupBy, 16),
             page: req.query.page,
             pageSize: req.query.pageSize
         });
