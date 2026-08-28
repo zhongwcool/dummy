@@ -82,6 +82,60 @@ function fillAuthBar() {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', logout);
     }
+    fillServiceVersion();
+}
+
+let serviceVersionPromise;
+
+function loadServiceVersion() {
+    if (!serviceVersionPromise) {
+        serviceVersionPromise = fetch('/api/version')
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error('version request failed');
+                }
+                return response.json();
+            })
+            .catch(function () {
+                return null;
+            });
+    }
+    return serviceVersionPromise;
+}
+
+function ensureServiceVersionEl() {
+    let el = document.querySelector('[data-service-version]');
+    if (el) {
+        return el;
+    }
+
+    const footer = document.createElement('footer');
+    footer.className = 'service-footer';
+    el = document.createElement('p');
+    el.className = 'service-version';
+    el.setAttribute('data-service-version', '');
+    footer.appendChild(el);
+    document.body.appendChild(footer);
+    return el;
+}
+
+function fillServiceVersion() {
+    const el = ensureServiceVersionEl();
+    loadServiceVersion().then(function (data) {
+        if (!data || !data.display) {
+            return;
+        }
+        el.textContent = data.display;
+        if (data.commitFull) {
+            el.title = data.commitFull;
+        }
+    });
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fillServiceVersion);
+} else {
+    fillServiceVersion();
 }
 
 async function apiRequest(url, options) {

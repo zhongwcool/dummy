@@ -9,6 +9,7 @@ const ipaddr = require('ipaddr.js');
 const app = express();
 const PORT = process.env.PORT || 5000;
 const statsDb = require('./utils/statsDb');
+const serviceVersion = require('./utils/serviceVersion');
 // 获取当前环境，如果未设置则默认为开发环境
 const NODE_ENV = process.env.NODE_ENV || 'production';
 
@@ -174,6 +175,10 @@ app.use('/api/update', updateRouter);
 app.use('/api/image', imageBedRouter);
 app.use('/api/stats', statsRouter);
 
+app.get('/api/version', (req, res) => {
+    res.json(serviceVersion);
+});
+
 // 404 处理
 app.use((req, res) => {
     res.status(404).json({error: 'Endpoint not found'});
@@ -206,5 +211,6 @@ app.listen(PORT, () => {
         localIPs.forEach(ip => {
             console.log(`Server running on http://${ip.address}:${PORT}`);
         });
+        console.log(serviceVersion.display);
     });
 });
