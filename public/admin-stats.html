@@ -29,7 +29,7 @@
     </div>
 
     <div id="listView">
-        <div id="productGrid" class="stats-product-grid">
+        <div id="productGrid" class="stats-product-list">
             <div class="text-center py-5 w-100">
                 <div class="spinner-border" role="status"></div>
             </div>
@@ -213,20 +213,14 @@
                 grid.innerHTML = '<div class="surface stats-empty">还没有客户端上报。接入后会按 appId 自动建档。</div>';
                 return;
             }
-            grid.innerHTML = products.map(function (product) {
-                const chips = (product.platforms || []).map(function (platform) {
-                    return '<span class="stats-chip">' + escapeHtml(PLATFORM_LABELS[platform] || platform) + '</span>';
-                }).join('');
+            grid.innerHTML = groupProductsByPlatform(products).map(function (group) {
                 return (
-                    '<button type="button" class="stats-product-card" data-app-id="' + escapeHtml(product.appId) + '">' +
-                    '<h2>' + escapeHtml(product.appName) + '</h2>' +
-                    '<div class="package-name">' + escapeHtml(product.appId) + '</div>' +
-                    '<div class="stats-product-meta">' +
-                    '<span>设备 <strong>' + product.deviceCount + '</strong></span>' +
-                    '<span>7 日活跃 <strong>' + product.active7d + '</strong></span>' +
-                    '</div>' +
-                    '<div class="stats-platform-chips">' + chips + '</div>' +
-                    '</button>'
+                    '<section class="stats-platform-group">' +
+                    '<h2 class="stats-platform-group-title">' + escapeHtml(group.label) +
+                    '<span>' + group.products.length + '</span></h2>' +
+                    '<div class="stats-product-grid">' +
+                    group.products.map(renderProductCard).join('') +
+                    '</div></section>'
                 );
             }).join('');
             grid.querySelectorAll('[data-app-id]').forEach(function (card) {
@@ -237,6 +231,53 @@
         } catch (error) {
             grid.innerHTML = '<div class="surface stats-empty text-danger">' + escapeHtml(error.message) + '</div>';
         }
+    }
+
+    function groupProductsByPlatform(products) {
+        const groups = {};
+        products.forEach(function (product) {
+            const platforms = product.platforms && product.platforms.length
+                ? product.platforms
+                : ['unknown'];
+            platforms.forEach(function (platform) {
+                if (!groups[platform]) {
+                    groups[platform] = [];
+                }
+                groups[platform].push(product);
+            });
+        });
+        const keys = Object.keys(PLATFORM_LABELS).filter(function (key) {
+            return groups[key];
+        });
+        Object.keys(groups).forEach(function (key) {
+            if (keys.indexOf(key) === -1) {
+                keys.push(key);
+            }
+        });
+        return keys.map(function (platform) {
+            return {
+                platform: platform,
+                label: PLATFORM_LABELS[platform] || (platform === 'unknown' ? '未知' : platform),
+                products: groups[platform]
+            };
+        });
+    }
+
+    function renderProductCard(product) {
+        const chips = (product.platforms || []).map(function (platform) {
+            return '<span class="stats-chip">' + escapeHtml(PLATFORM_LABELS[platform] || platform) + '</span>';
+        }).join('');
+        return (
+            '<button type="button" class="stats-product-card" data-app-id="' + escapeHtml(product.appId) + '">' +
+            '<h2>' + escapeHtml(product.appName) + '</h2>' +
+            '<div class="package-name">' + escapeHtml(product.appId) + '</div>' +
+            '<div class="stats-product-meta">' +
+            '<span>设备 <strong>' + product.deviceCount + '</strong></span>' +
+            '<span>7 日活跃 <strong>' + product.active7d + '</strong></span>' +
+            '</div>' +
+            '<div class="stats-platform-chips">' + chips + '</div>' +
+            '</button>'
+        );
     }
 
     function showList() {

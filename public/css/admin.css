@@ -1086,6 +1086,27 @@ body::before {
     overflow: hidden;
 }
 
+.stats-product-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+}
+
+.stats-platform-group-title {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 680;
+    margin: 0 0 0.75rem;
+}
+
+.stats-platform-group-title span {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--muted);
+}
+
 .stats-product-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
