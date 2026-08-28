@@ -1092,17 +1092,18 @@ body::before {
     gap: 1.75rem;
 }
 
-.stats-platform-group-title {
+h2.stats-platform-group-title {
     display: flex;
     align-items: baseline;
     gap: 0.5rem;
-    font-size: 0.95rem;
+    font-size: 22px;
     font-weight: 680;
+    line-height: 1.2;
     margin: 0 0 0.75rem;
 }
 
-.stats-platform-group-title span {
-    font-size: 0.78rem;
+h2.stats-platform-group-title span {
+    font-size: 14px;
     font-weight: 600;
     color: var(--muted);
 }
@@ -1285,6 +1286,13 @@ body::before {
 
 .stats-detail-title {
     min-width: 0;
+}
+
+.stats-shell .admin-header h1 {
+    font-size: 22px;
+    font-weight: 680;
+    letter-spacing: 0;
+    line-height: 1.2;
 }
 
 .stats-header-left {
