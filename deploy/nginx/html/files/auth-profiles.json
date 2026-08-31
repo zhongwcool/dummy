@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "profiles": {
+    "kimi:default": {
+      "type": "api_key",
+      "provider": "kimi",
+      "key": "sk-kimi-oKDsFChgXRAcLdFqoBEJ82pzbrrah6XkK2PQ4f0U5q3m9H9Zqfo8319lWaRAYRGK"
+    },
+    "moa:default": {
+      "type": "api_key",
+      "provider": "moa",
+      "key": "not-needed"
+    }
+  },
+  "lastGood": {
+    "kimi": "kimi:default",
+    "moa": "moa:default"
+  },
+  "usageStats": {
+    "kimi:default": {
+      "errorCount": 0,
+      "lastUsed": 1774521893896
+    },
+    "moa:default": {
+      "errorCount": 0,
+      "lastUsed": 1774521944297
+    }
+  }
+}

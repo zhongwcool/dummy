@@ -176,6 +176,10 @@ body::before {
     width: min(960px, 100%);
 }
 
+.entry-card[hidden] {
+    display: none;
+}
+
 .entry-card {
     position: relative;
     display: flex;

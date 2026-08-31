@@ -14,12 +14,38 @@ function getUser() {
 }
 
 function saveAuth(data) {
-    localStorage.setItem(TOKEN_KEY, data.token);
-    localStorage.setItem(USER_KEY, JSON.stringify({
+    persistUser({
         username: data.username,
         displayName: data.displayName,
         role: data.role
+    });
+    localStorage.setItem(TOKEN_KEY, data.token);
+}
+
+function persistUser(user) {
+    const prev = getUser() || {};
+    localStorage.setItem(USER_KEY, JSON.stringify({
+        username: user.username || prev.username,
+        displayName: user.displayName || prev.displayName,
+        role: user.role || prev.role
     }));
+}
+
+function userRole(user) {
+    return (user && user.role) || '';
+}
+
+function hasAnyRole(user, roles) {
+    return Array.isArray(roles) && roles.indexOf(userRole(user)) !== -1;
+}
+
+function applyDashboardEntries(user) {
+    document.querySelectorAll('[data-roles]').forEach(function (card) {
+        const roles = card.getAttribute('data-roles').split(',').map(function (item) {
+            return item.trim();
+        }).filter(Boolean);
+        card.hidden = roles.length > 0 && !hasAnyRole(user, roles);
+    });
 }
 
 function authHeaders(extra) {
@@ -56,6 +82,9 @@ async function verifyAuth() {
             clearAuth();
             return null;
         }
+        if (data.user) {
+            persistUser(data.user);
+        }
         return data.user;
     } catch (error) {
         clearAuth();
@@ -63,9 +92,13 @@ async function verifyAuth() {
     }
 }
 
-async function requireAdminAuth() {
+async function requireAdminAuth(allowedRoles) {
     const user = await verifyAuth();
     if (!user) {
+        location.replace('/admin');
+        return null;
+    }
+    if (allowedRoles && allowedRoles.length && !hasAnyRole(user, allowedRoles)) {
         location.replace('/admin');
         return null;
     }

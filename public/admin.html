@@ -37,14 +37,14 @@
         <h1>控制台</h1>
         <div class="admin-actions">
             <span class="text-muted small" id="currentUser"></span>
-            <a href="/" class="btn btn-light btn-sm">公开页</a>
+            <a href="/apps" class="btn btn-light btn-sm">公开页</a>
             <button type="button" class="btn btn-dark btn-sm" id="logoutBtn">退出</button>
         </div>
     </header>
 
     <main class="dashboard-main">
         <div class="entry-grid">
-            <a class="entry-card" href="/admin/apk">
+            <a class="entry-card" href="/admin/apps">
                 <div class="entry-icon">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                         <path d="M8 3h8l2 4H6l2-4Z" stroke="currentColor" stroke-width="1.7"/>
@@ -52,7 +52,7 @@
                         <path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
                     </svg>
                 </div>
-                <h2>APK 管理</h2>
+                <h2>APP 管理</h2>
                 <p>查看多应用版本，上传新包，删除旧版本。</p>
                 <span class="entry-go">进入
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -60,7 +60,7 @@
                     </svg>
                 </span>
             </a>
-            <a class="entry-card" href="/admin/users">
+            <a class="entry-card" href="/admin/users" data-roles="admin">
                 <div class="entry-icon">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                         <circle cx="9" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/>
@@ -93,7 +93,7 @@
                     </svg>
                 </span>
             </a>
-            <a class="entry-card" href="/admin/stats">
+            <a class="entry-card" href="/admin/stats" data-roles="admin,user">
                 <div class="entry-icon">
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                         <path d="M4 19V5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
@@ -121,7 +121,7 @@
         document.getElementById('loginForm').addEventListener('submit', handleLogin);
         const user = await verifyAuth();
         if (user) {
-            showDashboard();
+            showDashboard(user);
         } else {
             showLogin();
         }
@@ -132,10 +132,11 @@
         document.getElementById('dashboardPanel').style.display = 'none';
     }
 
-    function showDashboard() {
+    function showDashboard(user) {
         document.getElementById('loginPanel').style.display = 'none';
         document.getElementById('dashboardPanel').style.display = 'flex';
         fillAuthBar();
+        applyDashboardEntries(user || getUser());
     }
 
     async function handleLogin(e) {
@@ -161,7 +162,7 @@
 
             saveAuth(data);
             document.getElementById('loginForm').reset();
-            showDashboard();
+            showDashboard(getUser());
         } catch (error) {
             loginError.textContent = error.message || '登录失败，请重试';
             loginError.style.display = 'block';

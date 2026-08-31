@@ -1,0 +1,186 @@
+{
+  "meta": {
+    "lastTouchedVersion": "2026.3.24",
+    "lastTouchedAt": "2026-03-26T07:54:09.329Z"
+  },
+  "wizard": {
+    "lastRunAt": "2026-03-26T06:33:18.057Z",
+    "lastRunVersion": "2026.3.24",
+    "lastRunCommand": "onboard",
+    "lastRunMode": "local"
+  },
+  "auth": {
+    "profiles": {
+      "kimi:default": {
+        "provider": "kimi",
+        "mode": "api_key"
+      }
+    }
+  },
+  "models": {
+    "mode": "merge",
+    "providers": {
+      "kimi": {
+        "baseUrl": "https://api.kimi.com/coding/",
+        "api": "anthropic-messages",
+        "models": [
+          {
+            "id": "kimi-code",
+            "name": "Kimi Code",
+            "reasoning": true,
+            "input": [
+              "text",
+              "image"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 262144,
+            "maxTokens": 32768
+          }
+        ]
+      },
+      "moa": {
+        "baseUrl": "http://192.168.3.3:8090/v1/consensus/",
+        "api": "openai-completions",
+        "models": [
+          {
+            "id": "moa-consensus",
+            "name": "MoA Consensus",
+            "reasoning": true,
+            "input": [
+              "text"
+            ],
+            "cost": {
+              "input": 0,
+              "output": 0,
+              "cacheRead": 0,
+              "cacheWrite": 0
+            },
+            "contextWindow": 262144,
+            "maxTokens": 32768
+          }
+        ]
+      }
+    }
+  },
+  "agents": {
+    "defaults": {
+      "model": {
+        "primary": "kimi/kimi-code"
+      },
+      "models": {
+        "kimi/kimi-code": {
+          "alias": "Kimi"
+        },
+        "moa/moa-consensus": {
+          "alias": "Debate"
+        }
+      },
+      "workspace": "/Users/feilong3/.openclaw/workspace",
+      "compaction": {
+        "mode": "safeguard"
+      }
+    }
+  },
+  "tools": {
+    "profile": "coding",
+    "web": {
+      "search": {
+        "enabled": true,
+        "provider": "kimi"
+      }
+    }
+  },
+  "commands": {
+    "native": "auto",
+    "nativeSkills": "auto",
+    "restart": true,
+    "ownerDisplay": "raw"
+  },
+  "session": {
+    "dmScope": "per-channel-peer"
+  },
+  "hooks": {
+    "internal": {
+      "enabled": true,
+      "entries": {
+        "command-logger": {
+          "enabled": true
+        },
+        "session-memory": {
+          "enabled": true
+        }
+      }
+    }
+  },
+  "channels": {
+    "openclaw-weixin": {
+      "accounts": {}
+    }
+  },
+  "gateway": {
+    "port": 18789,
+    "mode": "local",
+    "bind": "loopback",
+    "auth": {
+      "mode": "token",
+      "token": "cd466f8c745c4b755ad5d048072fe9b07afb084c73390ec6"
+    },
+    "tailscale": {
+      "mode": "off",
+      "resetOnExit": false
+    },
+    "nodes": {
+      "denyCommands": [
+        "camera.snap",
+        "camera.clip",
+        "screen.record",
+        "contacts.add",
+        "calendar.add",
+        "reminders.add",
+        "sms.send"
+      ]
+    }
+  },
+  "skills": {
+    "entries": {
+      "himalaya": {
+        "enabled": false
+      }
+    }
+  },
+  "plugins": {
+    "entries": {
+      "moonshot": {
+        "enabled": true,
+        "config": {
+          "webSearch": {
+            "apiKey": "sk-kimi-oKDsFChgXRAcLdFqoBEJ82pzbrrah6XkK2PQ4f0U5q3m9H9Zqfo8319lWaRAYRGK"
+          }
+        }
+      },
+      "openclaw-weixin": {
+        "enabled": true
+      }
+    },
+    "installs": {
+      "openclaw-weixin": {
+        "source": "npm",
+        "spec": "@tencent-weixin/openclaw-weixin@latest",
+        "installPath": "/Users/feilong3/.openclaw/extensions/openclaw-weixin",
+        "version": "2.0.1",
+        "resolvedName": "@tencent-weixin/openclaw-weixin",
+        "resolvedVersion": "2.0.1",
+        "resolvedSpec": "@tencent-weixin/openclaw-weixin@2.0.1",
+        "integrity": "sha512-Ib7onvLU8a1ox9craMZxPwrN+ffJQJbToZzeMwoYryBOMIoBlVY0oCuQF7BZvZ7GRQQKOSSAdxvFkO47hKu0rg==",
+        "shasum": "06339fdc83226454e1286221889fd62c76ae2463",
+        "resolvedAt": "2026-03-26T06:47:44.703Z",
+        "installedAt": "2026-03-26T06:48:28.571Z"
+      }
+    }
+  }
+}

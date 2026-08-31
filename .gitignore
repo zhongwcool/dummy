@@ -5,3 +5,7 @@
 /public/files/
 /public/images/
 /public/app-assets/
+/deploy/nginx/logs/*.log
+/deploy/nginx/logs/*.pid
+/deploy/nginx/temp/*
+!/deploy/nginx/temp/.gitkeep

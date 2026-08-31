@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {verifyToken, checkRole} = require('../middleware/auth');
 const statsDb = require('../utils/statsDb');
+const {OPERATOR_ROLES} = require('../utils/roles');
 
 const APP_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
 const DEVICE_ID_RE = /^[A-Za-z0-9._-]{8,128}$/;
@@ -221,9 +222,9 @@ router.post('/report', limitReportBody, rateLimitReport, (req, res) => {
 /**
  * @route   GET /api/stats/products
  * @desc    产品列表及活跃概览
- * @access  Private (admin)
+ * @access  Private (admin, user)
  */
-router.get('/products', verifyToken, checkRole(['admin']), (req, res) => {
+router.get('/products', verifyToken, checkRole(OPERATOR_ROLES), (req, res) => {
     try {
         res.json({
             success: true,
@@ -241,9 +242,9 @@ router.get('/products', verifyToken, checkRole(['admin']), (req, res) => {
 /**
  * @route   GET /api/stats/:appId/summary
  * @desc    单产品概览
- * @access  Private (admin)
+ * @access  Private (admin, user)
  */
-router.get('/:appId/summary', verifyToken, checkRole(['admin']), (req, res) => {
+router.get('/:appId/summary', verifyToken, checkRole(OPERATOR_ROLES), (req, res) => {
     try {
         const appId = requireAppId(req, res);
         if (!appId) {
@@ -274,9 +275,9 @@ router.get('/:appId/summary', verifyToken, checkRole(['admin']), (req, res) => {
 /**
  * @route   GET /api/stats/:appId/devices
  * @desc    明细分页（已登录按账号各一行，未登录按设备各一行）
- * @access  Private (admin)
+ * @access  Private (admin, user)
  */
-router.get('/:appId/devices', verifyToken, checkRole(['admin']), (req, res) => {
+router.get('/:appId/devices', verifyToken, checkRole(OPERATOR_ROLES), (req, res) => {
     try {
         const appId = requireAppId(req, res);
         if (!appId) {
@@ -314,9 +315,9 @@ router.get('/:appId/devices', verifyToken, checkRole(['admin']), (req, res) => {
 /**
  * @route   GET /api/stats/:appId/trend
  * @desc    日活趋势
- * @access  Private (admin)
+ * @access  Private (admin, user)
  */
-router.get('/:appId/trend', verifyToken, checkRole(['admin']), (req, res) => {
+router.get('/:appId/trend', verifyToken, checkRole(OPERATOR_ROLES), (req, res) => {
     try {
         const appId = requireAppId(req, res);
         if (!appId) {
@@ -347,9 +348,9 @@ router.get('/:appId/trend', verifyToken, checkRole(['admin']), (req, res) => {
 /**
  * @route   PUT /api/stats/:appId
  * @desc    修改产品显示名
- * @access  Private (admin)
+ * @access  Private (admin, user)
  */
-router.put('/:appId', verifyToken, checkRole(['admin']), (req, res) => {
+router.put('/:appId', verifyToken, checkRole(OPERATOR_ROLES), (req, res) => {
     try {
         const appId = requireAppId(req, res);
         if (!appId) {
@@ -381,9 +382,9 @@ router.put('/:appId', verifyToken, checkRole(['admin']), (req, res) => {
 /**
  * @route   DELETE /api/stats/:appId
  * @desc    删除产品及全部统计数据
- * @access  Private (admin)
+ * @access  Private (admin, user)
  */
-router.delete('/:appId', verifyToken, checkRole(['admin']), (req, res) => {
+router.delete('/:appId', verifyToken, checkRole(OPERATOR_ROLES), (req, res) => {
     try {
         const appId = requireAppId(req, res);
         if (!appId) {

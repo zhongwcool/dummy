@@ -127,6 +127,10 @@ app.use(express.json()); // 解析 JSON 请求体
 app.use(express.urlencoded({extended: true})); // 解析 URL 编码的请求体
 
 app.get('/', (req, res) => {
+    res.redirect('/apps');
+});
+
+app.get('/apps', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
@@ -142,8 +146,12 @@ app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin.html'));
 });
 
+app.get('/admin/apps', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'admin-apps.html'));
+});
+
 app.get('/admin/apk', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'admin-apk.html'));
+    res.redirect('/admin/apps');
 });
 
 app.get('/admin/users', (req, res) => {

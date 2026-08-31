@@ -141,7 +141,7 @@
     let renameModal;
 
     document.addEventListener('DOMContentLoaded', async function () {
-        const user = await requireAdminAuth();
+        const user = await requireAdminAuth(['admin', 'user']);
         if (!user) {
             return;
         }

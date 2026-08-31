@@ -4,8 +4,7 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const {verifyToken, checkRole} = require('../middleware/auth');
 const {userDb} = require('../utils/fileHandler');
-
-const ALLOWED_ROLES = ['admin', 'user', 'guest'];
+const {ALL_ROLES, USER_MANAGER_ROLES} = require('../utils/roles');
 
 function sanitizeUser(username, user) {
     return {
@@ -19,7 +18,7 @@ function sanitizeUser(username, user) {
 }
 
 // 获取用户列表（需要 admin 权限）
-router.get('/', verifyToken, checkRole(['admin']), async (req, res) => {
+router.get('/', verifyToken, checkRole(USER_MANAGER_ROLES), async (req, res) => {
     try {
         const users = await userDb.read();
 
@@ -82,7 +81,7 @@ router.get('/me', verifyToken, async (req, res) => {
     }
 });
 
-router.post('/', verifyToken, checkRole(['admin']), async (req, res) => {
+router.post('/', verifyToken, checkRole(USER_MANAGER_ROLES), async (req, res) => {
     try {
         const {username, password, email, displayName, role} = req.body;
         const trimmedUsername = String(username || '').trim();
@@ -94,7 +93,7 @@ router.post('/', verifyToken, checkRole(['admin']), async (req, res) => {
             });
         }
 
-        if (!ALLOWED_ROLES.includes(role || 'user')) {
+        if (!ALL_ROLES.includes(role || 'user')) {
             return res.status(400).json({
                 success: false,
                 message: '无效的角色'
@@ -133,7 +132,7 @@ router.post('/', verifyToken, checkRole(['admin']), async (req, res) => {
     }
 });
 
-router.put('/:username', verifyToken, checkRole(['admin']), async (req, res) => {
+router.put('/:username', verifyToken, checkRole(USER_MANAGER_ROLES), async (req, res) => {
     try {
         const username = req.params.username;
         const {email, displayName, role, password} = req.body;
@@ -147,7 +146,7 @@ router.put('/:username', verifyToken, checkRole(['admin']), async (req, res) => 
             });
         }
 
-        if (role && !ALLOWED_ROLES.includes(role)) {
+        if (role && !ALL_ROLES.includes(role)) {
             return res.status(400).json({
                 success: false,
                 message: '无效的角色'
@@ -176,7 +175,7 @@ router.put('/:username', verifyToken, checkRole(['admin']), async (req, res) => 
     }
 });
 
-router.delete('/:username', verifyToken, checkRole(['admin']), async (req, res) => {
+router.delete('/:username', verifyToken, checkRole(USER_MANAGER_ROLES), async (req, res) => {
     try {
         const username = req.params.username;
         if (req.user.username === username) {
