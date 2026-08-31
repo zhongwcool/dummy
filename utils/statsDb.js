@@ -114,13 +114,23 @@ function getDb() {
             platform TEXT NOT NULL,
             version_name TEXT NOT NULL,
             active_devices INTEGER NOT NULL,
+            launches INTEGER NOT NULL DEFAULT 0,
             PRIMARY KEY (app_id, date, platform, version_name)
         );
+        CREATE TABLE IF NOT EXISTS device_daily (
+            app_id TEXT NOT NULL,
+            device_id TEXT NOT NULL,
+            date TEXT NOT NULL,
+            launches INTEGER NOT NULL DEFAULT 0,
+            PRIMARY KEY (app_id, device_id, date)
+        );
+        CREATE INDEX IF NOT EXISTS idx_device_daily_date ON device_daily(app_id, date);
         CREATE TABLE IF NOT EXISTS meta (
             key TEXT PRIMARY KEY,
             value TEXT
         );
     `);
+    ensureDailyLaunchesColumn(db);
     db.exec(`
         UPDATE devices
         SET ip = substr(ip, instr(lower(ip), '::ffff:') + 7)
@@ -134,6 +144,57 @@ function getDb() {
     `);
 
     return db;
+}
+
+function ensureDailyLaunchesColumn(conn) {
+    const columns = conn.prepare('PRAGMA table_info(daily_stats)').all();
+    if (columns.some((col) => col.name === 'launches')) {
+        return;
+    }
+    conn.exec('ALTER TABLE daily_stats ADD COLUMN launches INTEGER NOT NULL DEFAULT 0');
+}
+
+function isLaunchEvent(payload) {
+    return payload.event !== 'heartbeat';
+}
+
+function mergeDeviceDaily(conn, appId, fromDeviceId, toDeviceId) {
+    if (!fromDeviceId || !toDeviceId || fromDeviceId === toDeviceId) {
+        return;
+    }
+    const rows = conn.prepare(`
+        SELECT date, launches FROM device_daily
+        WHERE app_id = ? AND device_id = ?
+    `).all(appId, fromDeviceId);
+    if (!rows.length) {
+        return;
+    }
+    const upsert = conn.prepare(`
+        INSERT INTO device_daily (app_id, device_id, date, launches)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(app_id, device_id, date)
+        DO UPDATE SET launches = launches + excluded.launches
+    `);
+    for (const row of rows) {
+        upsert.run(appId, toDeviceId, row.date, row.launches);
+    }
+    conn.prepare('DELETE FROM device_daily WHERE app_id = ? AND device_id = ?').run(appId, fromDeviceId);
+}
+
+function incrementDeviceDaily(conn, appId, deviceId, dateStr) {
+    conn.prepare(`
+        INSERT INTO device_daily (app_id, device_id, date, launches)
+        VALUES (?, ?, ?, 1)
+        ON CONFLICT(app_id, device_id, date)
+        DO UPDATE SET launches = launches + 1
+    `).run(appId, deviceId, dateStr);
+}
+
+function avgLaunches(total, days) {
+    if (!days) {
+        return 0;
+    }
+    return Math.round((Number(total) || 0) / days * 10) / 10;
 }
 
 function selectDeviceRow(conn, appId, deviceId) {
@@ -196,6 +257,7 @@ function dedupeDuplicateAccounts(conn) {
                 }
             }
             for (let i = 1; i < rows.length; i++) {
+                mergeDeviceDaily(conn, group.appId, rows[i].deviceId, keep.deviceId);
                 deleteRow.run(group.appId, rows[i].deviceId);
             }
             updateKept.run(minFirst, reports, group.appId, keep.deviceId);
@@ -236,6 +298,8 @@ function upsertReport(payload) {
     const platform = payload.platform;
     const appName = (hasField(payload, 'appName') && payload.appName) ? payload.appName : appNameFromId(appId);
     const loggedIn = hasField(payload, 'account') && payload.account != null && String(payload.account).trim() !== '';
+    const launch = isLaunchEvent(payload);
+    const launchInc = launch ? 1 : 0;
 
     withTransaction(conn, () => {
         conn.prepare(`
@@ -254,6 +318,7 @@ function upsertReport(payload) {
                 keepRow = accountRow;
                 extraRow = deviceRow;
                 if (extraRow) {
+                    mergeDeviceDaily(conn, appId, extraRow.deviceId, keepRow.deviceId);
                     conn.prepare('DELETE FROM devices WHERE app_id = ? AND device_id = ?').run(appId, deviceId);
                 }
             }
@@ -265,7 +330,7 @@ function upsertReport(payload) {
                     app_id, device_id, platform, account, version_name, version_code,
                     os_version, device_model, arch, locale, channel, ip,
                     first_seen, last_seen, report_count, counted_date
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `).run(
                 appId,
                 deviceId,
@@ -281,11 +346,12 @@ function upsertReport(payload) {
                 payload.ip,
                 now,
                 now,
+                launchInc,
                 today
             );
         } else {
             const extraCount = extraRow ? Number(extraRow.reportCount) || 0 : 0;
-            const reportCount = (Number(keepRow.reportCount) || 0) + extraCount + 1;
+            const reportCount = (Number(keepRow.reportCount) || 0) + extraCount + launchInc;
             let firstSeen = keepRow.firstSeen || now;
             if (extraRow && extraRow.firstSeen && extraRow.firstSeen < firstSeen) {
                 firstSeen = extraRow.firstSeen;
@@ -310,6 +376,13 @@ function upsertReport(payload) {
             conn.prepare(
                 `UPDATE devices SET ${sets.join(', ')} WHERE app_id = ? AND device_id = ?`
             ).run(...values);
+            if (keepRow.deviceId !== deviceId) {
+                mergeDeviceDaily(conn, appId, keepRow.deviceId, deviceId);
+            }
+        }
+
+        if (launchInc) {
+            incrementDeviceDaily(conn, appId, deviceId, today);
         }
 
         const alreadyCounted = Boolean(
@@ -318,7 +391,8 @@ function upsertReport(payload) {
                 (extraRow && extraRow.countedDate === today)
             )
         );
-        if (!alreadyCounted) {
+        const activeInc = alreadyCounted ? 0 : 1;
+        if (activeInc || launchInc) {
             const current = conn.prepare(`
                 SELECT platform, COALESCE(version_name, '') AS version_name
                 FROM devices
@@ -326,11 +400,13 @@ function upsertReport(payload) {
             `).get(appId, deviceId);
 
             conn.prepare(`
-                INSERT INTO daily_stats (app_id, date, platform, version_name, active_devices)
-                VALUES (?, ?, ?, ?, 1)
+                INSERT INTO daily_stats (app_id, date, platform, version_name, active_devices, launches)
+                VALUES (?, ?, ?, ?, ?, ?)
                 ON CONFLICT(app_id, date, platform, version_name)
-                DO UPDATE SET active_devices = active_devices + 1
-            `).run(appId, today, current.platform, current.version_name);
+                DO UPDATE SET
+                    active_devices = active_devices + excluded.active_devices,
+                    launches = launches + excluded.launches
+            `).run(appId, today, current.platform, current.version_name, activeInc, launchInc);
         }
         if (!keepRow || !alreadyCounted || keepRow.countedDate !== today) {
             conn.prepare(
@@ -342,6 +418,7 @@ function upsertReport(payload) {
 
 function listProducts() {
     const since7d = isoDaysAgo(7);
+    const since7dDate = localDate(addDays(new Date(), -6));
     return getDb().prepare(`
         SELECT
             p.app_id AS appId,
@@ -349,17 +426,23 @@ function listProducts() {
             p.created_at AS createdAt,
             COUNT(d.device_id) AS deviceCount,
             SUM(CASE WHEN d.last_seen >= ? THEN 1 ELSE 0 END) AS active7d,
+            COALESCE((
+                SELECT SUM(s.launches)
+                FROM daily_stats s
+                WHERE s.app_id = p.app_id AND s.date >= ?
+            ), 0) AS launches7d,
             GROUP_CONCAT(DISTINCT d.platform) AS platforms
         FROM products p
         LEFT JOIN devices d ON d.app_id = p.app_id
         GROUP BY p.app_id
         ORDER BY active7d DESC, deviceCount DESC, p.app_id ASC
-    `).all(since7d).map((row) => ({
+    `).all(since7d, since7dDate).map((row) => ({
         appId: row.appId,
         appName: row.appName,
         createdAt: row.createdAt,
         deviceCount: row.deviceCount || 0,
         active7d: row.active7d || 0,
+        launches7d: row.launches7d || 0,
         platforms: row.platforms ? row.platforms.split(',').filter(Boolean) : []
     }));
 }
@@ -407,15 +490,32 @@ function getSummary(appId, platform) {
         WHERE app_id = ?${filter.sql} AND account IS NOT NULL AND TRIM(account) != ''
     `).get(...baseParams).n;
 
+    const today = localDate();
+    const sumLaunches = (sinceDate) => conn.prepare(`
+        SELECT COALESCE(SUM(launches), 0) AS n
+        FROM daily_stats
+        WHERE app_id = ? AND date >= ?${filter.sql}
+    `).get(appId, sinceDate, ...filter.params).n;
+    const launches1d = sumLaunches(today);
+    const launches7d = sumLaunches(localDate(addDays(new Date(), -6)));
+    const launches30d = sumLaunches(localDate(addDays(new Date(), -29)));
+    const active1d = countStmt(' AND last_seen >= ?', [isoDaysAgo(1)]);
+    const active7d = countStmt(' AND last_seen >= ?', [isoDaysAgo(7)]);
+    const active30d = countStmt(' AND last_seen >= ?', [isoDaysAgo(30)]);
+
     return {
         appId: product.app_id,
         appName: product.app_name || product.app_id,
         createdAt: product.created_at,
         totalDevices: countStmt(''),
-        active1d: countStmt(' AND last_seen >= ?', [isoDaysAgo(1)]),
-        active7d: countStmt(' AND last_seen >= ?', [isoDaysAgo(7)]),
-        active30d: countStmt(' AND last_seen >= ?', [isoDaysAgo(30)]),
+        active1d,
+        active7d,
+        active30d,
         uniqueAccounts,
+        launches1d,
+        launches7d,
+        launches30d,
+        avgLaunches7d: avgLaunches(launches7d, active7d),
         byPlatform,
         byVersion
     };
@@ -428,51 +528,90 @@ function listDevices(options) {
         return null;
     }
 
-    const where = ['app_id = ?'];
+    const where = ['d.app_id = ?'];
     const params = [appId];
 
     const filter = platformFilter(options.platform);
     if (filter.sql) {
-        where.push('platform = ?');
+        where.push('d.platform = ?');
         params.push(options.platform);
     }
     if (options.version) {
-        where.push('version_name = ?');
+        where.push('d.version_name = ?');
         params.push(options.version);
     }
     if (options.account) {
-        where.push('account LIKE ?');
+        where.push('d.account LIKE ?');
         params.push(`%${options.account}%`);
     }
 
     const page = Math.max(1, parseInt(options.page, 10) || 1);
     const pageSize = Math.min(100, Math.max(1, parseInt(options.pageSize, 10) || 20));
     const whereSql = where.join(' AND ');
-    const total = conn.prepare(`SELECT COUNT(*) AS n FROM devices WHERE ${whereSql}`).get(...params).n;
+    const total = conn.prepare(`SELECT COUNT(*) AS n FROM devices d WHERE ${whereSql}`).get(...params).n;
     const devices = conn.prepare(`
         SELECT
-            app_id AS appId,
-            device_id AS deviceId,
-            platform,
-            account,
-            version_name AS versionName,
-            version_code AS versionCode,
-            os_version AS osVersion,
-            device_model AS deviceModel,
-            arch,
-            locale,
-            channel,
-            ip,
-            first_seen AS firstSeen,
-            last_seen AS lastSeen,
-            report_count AS reportCount
-        FROM devices
+            d.app_id AS appId,
+            d.device_id AS deviceId,
+            d.platform,
+            d.account,
+            d.version_name AS versionName,
+            d.version_code AS versionCode,
+            d.os_version AS osVersion,
+            d.device_model AS deviceModel,
+            d.arch,
+            d.locale,
+            d.channel,
+            d.ip,
+            d.first_seen AS firstSeen,
+            d.last_seen AS lastSeen,
+            d.report_count AS reportCount
+        FROM devices d
         WHERE ${whereSql}
-        ORDER BY last_seen DESC
+        ORDER BY d.last_seen DESC
         LIMIT ? OFFSET ?
     `).all(...params, pageSize, (page - 1) * pageSize);
 
     return {total, page, pageSize, devices};
+}
+
+function getDeviceDaily(appId, deviceId, days) {
+    const conn = getDb();
+    if (!getProduct(appId)) {
+        return null;
+    }
+    const device = selectDeviceRow(conn, appId, deviceId);
+    if (!device) {
+        return null;
+    }
+
+    const span = Math.min(90, Math.max(1, parseInt(days, 10) || 30));
+    const startDate = localDate(addDays(new Date(), 1 - span));
+    const rows = conn.prepare(`
+        SELECT date, launches
+        FROM device_daily
+        WHERE app_id = ? AND device_id = ? AND date >= ?
+        ORDER BY date ASC
+    `).all(appId, deviceId, startDate);
+
+    const totals = {};
+    for (let i = 0; i < span; i++) {
+        totals[localDate(addDays(new Date(), i - (span - 1)))] = 0;
+    }
+    for (const row of rows) {
+        if (Object.prototype.hasOwnProperty.call(totals, row.date)) {
+            totals[row.date] = row.launches;
+        }
+    }
+
+    return {
+        deviceId,
+        days: span,
+        series: Object.keys(totals).sort().map((date) => ({
+            date,
+            launches: totals[date]
+        }))
+    };
 }
 
 function getTrend(appId, days, platform) {
@@ -484,19 +623,24 @@ function getTrend(appId, days, platform) {
     const startDate = localDate(addDays(new Date(), 1 - span));
     const filter = platformFilter(platform);
     const rows = getDb().prepare(`
-        SELECT date, platform, version_name AS versionName, active_devices AS activeDevices
+        SELECT date, platform, version_name AS versionName,
+               active_devices AS activeDevices, COALESCE(launches, 0) AS launches
         FROM daily_stats
         WHERE app_id = ? AND date >= ?${filter.sql}
         ORDER BY date ASC
     `).all(appId, startDate, ...filter.params);
 
     const totals = {};
+    const launchTotals = {};
     for (let i = 0; i < span; i++) {
-        totals[localDate(addDays(new Date(), i - (span - 1)))] = 0;
+        const date = localDate(addDays(new Date(), i - (span - 1)));
+        totals[date] = 0;
+        launchTotals[date] = 0;
     }
     for (const row of rows) {
         if (Object.prototype.hasOwnProperty.call(totals, row.date)) {
             totals[row.date] += row.activeDevices;
+            launchTotals[row.date] += row.launches;
         }
     }
 
@@ -504,7 +648,9 @@ function getTrend(appId, days, platform) {
         days: span,
         series: Object.keys(totals).sort().map((date) => ({
             date,
-            activeDevices: totals[date]
+            activeDevices: totals[date],
+            launches: launchTotals[date],
+            avgLaunches: avgLaunches(launchTotals[date], totals[date])
         })),
         breakdown: rows
     };
@@ -517,6 +663,7 @@ function renameProduct(appId, appName) {
 function deleteProduct(appId) {
     const conn = getDb();
     return withTransaction(conn, () => {
+        conn.prepare('DELETE FROM device_daily WHERE app_id = ?').run(appId);
         conn.prepare('DELETE FROM daily_stats WHERE app_id = ?').run(appId);
         conn.prepare('DELETE FROM devices WHERE app_id = ?').run(appId);
         return changedRows(conn.prepare('DELETE FROM products WHERE app_id = ?').run(appId));
@@ -526,8 +673,8 @@ function deleteProduct(appId) {
 function rollupDate(dateStr) {
     const conn = getDb();
     conn.prepare(`
-        INSERT INTO daily_stats (app_id, date, platform, version_name, active_devices)
-        SELECT app_id, ?, COALESCE(platform, ''), COALESCE(version_name, ''), COUNT(*)
+        INSERT INTO daily_stats (app_id, date, platform, version_name, active_devices, launches)
+        SELECT app_id, ?, COALESCE(platform, ''), COALESCE(version_name, ''), COUNT(*), 0
         FROM devices
         WHERE last_seen >= ? AND last_seen < ?
         GROUP BY app_id, platform, version_name
@@ -539,13 +686,28 @@ function rollupYesterday() {
     rollupDate(localDate(addDays(new Date(), -1)));
 }
 
-function purgeStale(deviceDays = 180, dailyDays = 365) {
+function purgeStale(deviceDays = 180, dailyDays = 365, deviceDailyDays = 60) {
     const conn = getDb();
     const deviceCutoff = isoDaysAgo(deviceDays);
     const dailyCutoff = localDate(addDays(new Date(), -dailyDays));
+    const deviceDailyCutoff = localDate(addDays(new Date(), -deviceDailyDays));
+    const deviceDaily = conn.prepare(`
+        DELETE FROM device_daily
+        WHERE date < ?
+           OR EXISTS (
+               SELECT 1 FROM devices d
+               WHERE d.app_id = device_daily.app_id
+                 AND d.device_id = device_daily.device_id
+                 AND d.last_seen < ?
+           )
+    `).run(deviceDailyCutoff, deviceCutoff);
     const devices = conn.prepare('DELETE FROM devices WHERE last_seen < ?').run(deviceCutoff);
     const daily = conn.prepare('DELETE FROM daily_stats WHERE date < ?').run(dailyCutoff);
-    return {devices: Number(devices.changes) || 0, daily: Number(daily.changes) || 0};
+    return {
+        devices: Number(devices.changes) || 0,
+        daily: Number(daily.changes) || 0,
+        deviceDaily: Number(deviceDaily.changes) || 0
+    };
 }
 
 function runMaintenance() {
@@ -573,6 +735,7 @@ module.exports = {
     listProducts,
     getSummary,
     listDevices,
+    getDeviceDaily,
     getTrend,
     renameProduct,
     deleteProduct,

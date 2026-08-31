@@ -19,40 +19,17 @@ Node.js + Express 实现简易测试api
 
 管理页：`/admin/stats`（需 admin 登录）
 
-数据存在 SQLite 文件 `data/stats.db`（使用 Node.js 内置 `node:sqlite`，无需安装 `better-sqlite3`）。已登录账号按 `appId + account` 覆盖为一条记录（保留该账号最早的首次活跃，其余字段取最后一次上报）；未登录仍按 `appId + deviceId` 各留一行。不存上报流水。首次上报会按 `appId` 自动建档；平台（Android / iOS / Windows / macOS / Linux）是设备字段，不编进产品 ID。
+数据在 `data/stats.db`（Node 内置 sqlite）。已登录按 `appId + account` 一行，未登录按 `deviceId` 一行。打开次数按自然日写入；心跳（`event=heartbeat`）不计次。
 
-### 客户端上报
-
-- `POST /api/stats/report`（公开，无需登录）
-- 建议时机：每次冷启动一次；桌面长驻进程每 24 小时心跳一次；切换账号时补报一次
-- 失败应静默忽略，不要影响客户端正常功能
-- `deviceId` 由客户端首次启动生成 UUID 并持久化，不要用硬件 ID
-- 兼容：多传的未知字段会被忽略；没出现的选填字段不会覆盖成空。要清空账号请显式传 `"account": ""`（退出登录）
-
-```json
-{
-  "appId": "com.example.myapp",
-  "deviceId": "550e8400-e29b-41d4-a716-446655440000",
-  "platform": "android",
-  "account": "alice",
-  "versionName": "2.3.1",
-  "versionCode": 231,
-  "osVersion": "Android 14",
-  "deviceModel": "Pixel 8",
-  "arch": "arm64",
-  "locale": "zh-CN",
-  "channel": "official"
-}
-```
-
-`platform` 仅允许：`android` / `ios` / `windows` / `mac` / `linux`。
+**客户端接入（Android / Windows 等）见 [docs/client-stats.md](docs/client-stats.md)。** 在其它仓库改客户端时，Cursor 使用个人 skill `client-stats-report`。
 
 ### 管理接口（需 admin token）
 
 - `GET /api/stats/products` - 产品列表
-- `GET /api/stats/:appId/summary` - 概览（可加 `?platform=`）
-- `GET /api/stats/:appId/devices` - 明细（`platform` / `version` / `account` / `page` / `pageSize`）
-- `GET /api/stats/:appId/trend?days=30` - 日活趋势
+- `GET /api/stats/:appId/summary` - 概览（可加 `?platform=`，含日/周/月打开次数）
+- `GET /api/stats/:appId/devices` - 明细（`platform` / `version` / `account` / `page` / `pageSize`，含累计打开次数）
+- `GET /api/stats/:appId/devices/:deviceId/daily?days=30` - 单设备每日打开次数
+- `GET /api/stats/:appId/trend?days=30` - 日活与打开次数趋势
 - `PUT /api/stats/:appId` - 修改显示名 `{ "appName": "..." }`
 - `DELETE /api/stats/:appId` - 删除该产品全部统计
 

@@ -1188,7 +1188,8 @@ h2.stats-platform-group-title span {
 
 .stats-product-meta {
     display: flex;
-    gap: 1rem;
+    flex-wrap: wrap;
+    gap: 0.65rem 1rem;
     font-size: 0.82rem;
     color: var(--ink);
 }
@@ -1223,28 +1224,30 @@ h2.stats-platform-group-title span {
 
 .stats-kpi-grid {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 0.75rem;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 0.55rem;
     margin-bottom: 1.15rem;
 }
 
 .stats-kpi {
     background: var(--paper);
     backdrop-filter: blur(18px);
-    border-radius: 20px;
-    padding: 1rem 1.05rem;
+    border-radius: 16px;
+    padding: 0.75rem 0.7rem;
     box-shadow: var(--shadow-low), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    min-width: 0;
 }
 
 .stats-kpi .label {
     display: block;
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     color: var(--muted);
-    margin-bottom: 0.3rem;
+    margin-bottom: 0.22rem;
+    white-space: nowrap;
 }
 
 .stats-kpi .value {
-    font-size: 1.4rem;
+    font-size: 1.22rem;
     font-weight: 720;
     letter-spacing: -0.03em;
 }
@@ -1288,6 +1291,23 @@ h2.stats-platform-group-title span {
     font-size: 0.95rem;
     font-weight: 680;
     margin: 0 0 0.75rem;
+}
+
+.stats-chart-card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    min-width: 0;
+}
+
+.stats-chart-card-head h2 {
+    margin: 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .stats-chart-wrap {
@@ -1364,11 +1384,24 @@ h2.stats-platform-group-title span {
 
 .stats-device-table col.col-account { width: 16%; }
 .stats-device-table col.col-platform { width: 8%; }
-.stats-device-table col.col-version { width: 12%; }
-.stats-device-table col.col-os { width: 10%; }
-.stats-device-table col.col-model { width: 18%; }
+.stats-device-table col.col-version { width: 11%; }
+.stats-device-table col.col-os { width: 9%; }
+.stats-device-table col.col-model { width: 14%; }
 .stats-device-table col.col-ip { width: 12%; }
-.stats-device-table col.col-time { width: 12%; }
+.stats-device-table col.col-count { width: 8%; }
+.stats-device-table col.col-time { width: 11%; }
+
+.stats-device-row {
+    cursor: pointer;
+}
+
+.stats-device-row.is-open {
+    background: var(--accent-soft);
+}
+
+.stats-device-row:hover {
+    background: rgba(59, 91, 253, 0.06);
+}
 
 .stats-device-table th,
 .stats-device-table td {
@@ -1380,6 +1413,12 @@ h2.stats-platform-group-title span {
 .stats-device-panel .table > :not(caption) > * > * {
     padding-left: 1.15rem;
     padding-right: 1.15rem;
+}
+
+@media (max-width: 1200px) {
+    .stats-kpi-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
 }
 
 @media (max-width: 900px) {

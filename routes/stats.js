@@ -6,6 +6,7 @@ const {OPERATOR_ROLES} = require('../utils/roles');
 
 const APP_ID_RE = /^[A-Za-z0-9._-]{1,128}$/;
 const DEVICE_ID_RE = /^[A-Za-z0-9._-]{8,128}$/;
+const REPORT_EVENTS = ['launch', 'heartbeat'];
 const REPORT_LIMIT = 10 * 1024;
 const RATE_LIMIT = 30;
 const RATE_WINDOW_MS = 60 * 1000;
@@ -121,6 +122,18 @@ function requireAppId(req, res) {
     return appId;
 }
 
+function requireDeviceId(req, res) {
+    const deviceId = clip(req.params.deviceId, 128);
+    if (!deviceId || !DEVICE_ID_RE.test(deviceId)) {
+        res.status(400).json({
+            success: false,
+            message: '无效的 deviceId'
+        });
+        return null;
+    }
+    return deviceId;
+}
+
 function optionalPlatform(value, res) {
     const platform = clip(value, 16);
     if (!platform) {
@@ -138,7 +151,7 @@ function optionalPlatform(value, res) {
 
 /**
  * @route   POST /api/stats/report
- * @desc    客户端上报设备最后状态
+ * @desc    客户端上报设备最后状态（冷启动计打开次数，心跳只刷新在线）
  * @access  Public
  */
 router.post('/report', limitReportBody, rateLimitReport, (req, res) => {
@@ -179,6 +192,16 @@ router.post('/report', limitReportBody, rateLimitReport, (req, res) => {
             platform,
             ip: clip(clientIp(req), 45)
         };
+        if (Object.prototype.hasOwnProperty.call(body, 'event')) {
+            const event = clip(body.event, 16);
+            if (!event || !REPORT_EVENTS.includes(event)) {
+                return res.status(400).json({
+                    success: false,
+                    message: `event 必须是 ${REPORT_EVENTS.join(' / ')} 之一`
+                });
+            }
+            payload.event = event;
+        }
         if (Object.prototype.hasOwnProperty.call(body, 'appName')) {
             payload.appName = clip(body.appName, 64);
         }
@@ -273,6 +296,39 @@ router.get('/:appId/summary', verifyToken, checkRole(OPERATOR_ROLES), (req, res)
 });
 
 /**
+ * @route   GET /api/stats/:appId/devices/:deviceId/daily
+ * @desc    单设备每日打开次数
+ * @access  Private (admin, user)
+ */
+router.get('/:appId/devices/:deviceId/daily', verifyToken, checkRole(OPERATOR_ROLES), (req, res) => {
+    try {
+        const appId = requireAppId(req, res);
+        if (!appId) {
+            return;
+        }
+        const deviceId = requireDeviceId(req, res);
+        if (!deviceId) {
+            return;
+        }
+
+        const daily = statsDb.getDeviceDaily(appId, deviceId, req.query.days);
+        if (!daily) {
+            return res.status(404).json({
+                success: false,
+                message: '未找到该设备'
+            });
+        }
+        res.json({success: true, ...daily});
+    } catch (error) {
+        console.error('获取设备日打开失败:', error);
+        res.status(500).json({
+            success: false,
+            message: '获取日打开失败'
+        });
+    }
+});
+
+/**
  * @route   GET /api/stats/:appId/devices
  * @desc    明细分页（已登录按账号各一行，未登录按设备各一行）
  * @access  Private (admin, user)
@@ -314,7 +370,7 @@ router.get('/:appId/devices', verifyToken, checkRole(OPERATOR_ROLES), (req, res)
 
 /**
  * @route   GET /api/stats/:appId/trend
- * @desc    日活趋势
+ * @desc    日活与打开次数趋势
  * @access  Private (admin, user)
  */
 router.get('/:appId/trend', verifyToken, checkRole(OPERATOR_ROLES), (req, res) => {
