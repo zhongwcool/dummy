@@ -113,7 +113,7 @@
                         <img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.filename)}">
                         <div class="image-overlay">
                             <div class="small mb-1">${escapeHtml(formatFileSize(item.size) || '0 B')}</div>
-                            <div class="d-flex gap-1">
+                            <div class="d-flex justify-content-between">
                                 <button class="btn btn-sm btn-light copy-btn">复制</button>
                                 <button class="btn btn-sm btn-danger delete-btn">删除</button>
                             </div>
