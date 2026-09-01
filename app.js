@@ -158,8 +158,12 @@ app.get('/admin/users', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin-users.html'));
 });
 
-app.get('/admin/images', (req, res) => {
+app.get('/admin/image', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'admin-images.html'));
+});
+
+app.get('/admin/images', (req, res) => {
+    res.redirect('/admin/image');
 });
 
 app.get('/admin/stats', (req, res) => {

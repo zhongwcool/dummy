@@ -6,7 +6,8 @@ Node.js + Express 实现简易测试api
 
 ## 简易图床
 
-- 页面地址：`/image`（或 `/image.html`）
+- 公开页：`/image`（或 `/image.html`）
+- 管理页：`/admin/image`（需登录）
 - 上传接口：`POST /api/image/upload`
 - 列表接口：`GET /api/image/list`（按上传时间倒序）
 - 删除接口：`DELETE /api/image/:filename`
