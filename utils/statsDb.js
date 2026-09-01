@@ -540,9 +540,11 @@ function listDevices(options) {
         where.push('d.version_name = ?');
         params.push(options.version);
     }
-    if (options.account) {
-        where.push('d.account LIKE ?');
-        params.push(`%${options.account}%`);
+    if (options.q || options.account) {
+        const keyword = options.q || options.account;
+        where.push('(IFNULL(d.ip, \'\') LIKE ? OR IFNULL(d.device_model, \'\') LIKE ? OR IFNULL(d.account, \'\') LIKE ? OR d.device_id LIKE ?)');
+        const like = `%${keyword}%`;
+        params.push(like, like, like, like);
     }
 
     const page = Math.max(1, parseInt(options.page, 10) || 1);

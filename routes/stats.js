@@ -330,7 +330,7 @@ router.get('/:appId/devices/:deviceId/daily', verifyToken, checkRole(OPERATOR_RO
 
 /**
  * @route   GET /api/stats/:appId/devices
- * @desc    明细分页（已登录按账号各一行，未登录按设备各一行）
+ * @desc    明细分页（按设备各一行）
  * @access  Private (admin, user)
  */
 router.get('/:appId/devices', verifyToken, checkRole(OPERATOR_ROLES), (req, res) => {
@@ -348,7 +348,7 @@ router.get('/:appId/devices', verifyToken, checkRole(OPERATOR_ROLES), (req, res)
             appId,
             platform,
             version: clip(req.query.version, 64),
-            account: clip(req.query.account, 128),
+            q: clip(req.query.q, 128) || clip(req.query.account, 128),
             page: req.query.page,
             pageSize: req.query.pageSize
         });

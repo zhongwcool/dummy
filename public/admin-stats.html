@@ -48,8 +48,8 @@
             </div>
             <div class="stats-chart-card">
                 <div class="stats-chart-card-head">
-                    <h2 id="trendChartTitle">30 日活跃与打开次数</h2>
-                    <button type="button" class="btn btn-light btn-sm" id="trendResetBtn" style="display: none;">全部</button>
+                    <h2 id="trendChartTitle">30 日活跃设备</h2>
+                    <button type="button" class="btn btn-light btn-sm is-idle" id="trendResetBtn">全部</button>
                 </div>
                 <div class="stats-chart-wrap">
                     <canvas id="trendChart"></canvas>
@@ -57,7 +57,7 @@
             </div>
         </div>
         <div class="stats-filters">
-            <input type="search" class="form-control form-control-sm" id="accountFilter" placeholder="搜索账号">
+            <input type="search" class="form-control form-control-sm" id="deviceFilter" placeholder="搜索 IP / 机型 / 账号">
             <select class="form-select form-select-sm" id="versionFilter">
                 <option value="">全部版本</option>
             </select>
@@ -65,27 +65,25 @@
         <div class="table-responsive surface user-panel stats-device-panel">
             <table class="table table-hover mb-0 stats-device-table">
                 <colgroup>
-                    <col class="col-account">
+                    <col class="col-ip">
                     <col class="col-platform">
                     <col class="col-version">
                     <col class="col-os">
                     <col class="col-model">
-                    <col class="col-ip">
-                    <col class="col-count">
                     <col class="col-time">
                     <col class="col-time">
+                    <col class="col-account">
                 </colgroup>
                 <thead>
                 <tr>
-                    <th>账号</th>
+                    <th>IP</th>
                     <th>平台</th>
                     <th>版本</th>
                     <th>系统</th>
                     <th>机型</th>
-                    <th>IP</th>
-                    <th>打开次数</th>
                     <th>首次活跃</th>
                     <th>最后活跃</th>
+                    <th>账号</th>
                 </tr>
                 </thead>
                 <tbody id="deviceTable"></tbody>
@@ -162,7 +160,7 @@
             loadTrend();
         });
         let accountTimer;
-        document.getElementById('accountFilter').addEventListener('input', function () {
+        document.getElementById('deviceFilter').addEventListener('input', function () {
             clearTimeout(accountTimer);
             accountTimer = setTimeout(function () {
                 currentPage = 1;
@@ -312,7 +310,7 @@
         currentPlatform = '';
         currentPage = 1;
         selectedDeviceId = '';
-        document.getElementById('accountFilter').value = '';
+        document.getElementById('deviceFilter').value = '';
         document.getElementById('listView').style.display = 'none';
         document.getElementById('detailView').style.display = '';
         document.getElementById('moduleActions').style.display = 'flex';
@@ -355,7 +353,6 @@
             ['日活', summary.active1d],
             ['周活', summary.active7d],
             ['月活', summary.active30d],
-            ['去重账号', summary.uniqueAccounts],
             ['今日打开', summary.launches1d || 0],
             ['7 日打开', summary.launches7d || 0],
             ['30 日打开', summary.launches30d || 0]
@@ -433,35 +430,27 @@
         setTrendTitle('');
         highlightDeviceRow();
         const data = await apiRequest(statsUrl(currentAppId, '/trend', queryParams({days: 30})), {headers: authHeaders()});
-        renderTrendChart((data.trend && data.trend.series) || []);
+        renderTrendChart((data.trend && data.trend.series) || [], 'active');
     }
 
-    function renderTrendChart(series) {
+    function renderTrendChart(series, mode) {
+        const isLaunches = mode === 'launches';
         destroyChart(trendChart);
         trendChart = new Chart(document.getElementById('trendChart'), {
             type: 'line',
             data: {
                 labels: series.map(function (row) { return row.date.slice(5); }),
                 datasets: [{
-                    label: '活跃设备',
-                    data: series.map(function (row) { return row.activeDevices; }),
-                    borderColor: '#3b5bfd',
-                    backgroundColor: 'rgba(59, 91, 253, 0.12)',
-                    fill: false,
+                    label: isLaunches ? '打开次数' : '活跃设备',
+                    data: series.map(function (row) {
+                        return isLaunches ? (row.launches || 0) : row.activeDevices;
+                    }),
+                    borderColor: isLaunches ? '#ffb078' : '#3b5bfd',
+                    backgroundColor: isLaunches ? 'rgba(255, 176, 120, 0.12)' : 'rgba(59, 91, 253, 0.12)',
+                    fill: true,
                     tension: 0.35,
                     pointRadius: 2,
-                    borderWidth: 2,
-                    yAxisID: 'y'
-                }, {
-                    label: '打开次数',
-                    data: series.map(function (row) { return row.launches || 0; }),
-                    borderColor: '#ffb078',
-                    backgroundColor: 'rgba(255, 176, 120, 0.12)',
-                    fill: false,
-                    tension: 0.35,
-                    pointRadius: 2,
-                    borderWidth: 2,
-                    yAxisID: 'yLaunches'
+                    borderWidth: 2
                 }]
             },
             options: {
@@ -469,24 +458,18 @@
                 interaction: {mode: 'index', intersect: false},
                 scales: {
                     y: {beginAtZero: true, ticks: {precision: 0}},
-                    yLaunches: {
-                        beginAtZero: true,
-                        position: 'right',
-                        grid: {drawOnChartArea: false},
-                        ticks: {precision: 0}
-                    },
                     x: {grid: {display: false}}
                 },
-                plugins: {legend: {position: 'bottom', labels: {boxWidth: 12}}}
+                plugins: {legend: {display: false}}
             }
         });
     }
 
     function setTrendTitle(extra) {
         document.getElementById('trendChartTitle').textContent = extra
-            ? '30 日活跃与打开次数 · ' + extra
-            : '30 日活跃与打开次数';
-        document.getElementById('trendResetBtn').style.display = extra ? '' : 'none';
+            ? '30 日打开次数 · ' + extra
+            : '30 日活跃设备';
+        document.getElementById('trendResetBtn').classList.toggle('is-idle', !extra);
     }
 
     function highlightDeviceRow() {
@@ -503,8 +486,8 @@
         }
         selectedDeviceId = deviceId;
         highlightDeviceRow();
-        const account = row.cells[0] ? row.cells[0].textContent : '未登录';
-        setTrendTitle(account);
+        const label = row.getAttribute('data-device-label') || '该设备';
+        setTrendTitle(label);
         document.getElementById('trendChart').closest('.stats-chart-card').scrollIntoView({
             behavior: 'smooth',
             block: 'center'
@@ -517,13 +500,7 @@
             if (selectedDeviceId !== deviceId) {
                 return;
             }
-            renderTrendChart((data.series || []).map(function (item) {
-                return {
-                    date: item.date,
-                    activeDevices: item.launches > 0 ? 1 : 0,
-                    launches: item.launches || 0
-                };
-            }));
+            renderTrendChart(data.series || [], 'launches');
         } catch (error) {
             alert(error.message || '加载趋势失败');
             await loadTrend();
@@ -535,10 +512,10 @@
             page: currentPage,
             pageSize: PAGE_SIZE
         });
-        const account = document.getElementById('accountFilter').value.trim();
+        const keyword = document.getElementById('deviceFilter').value.trim();
         const version = document.getElementById('versionFilter').value;
-        if (account) {
-            params.account = account;
+        if (keyword) {
+            params.q = keyword;
         }
         if (version) {
             params.version = version;
@@ -549,19 +526,20 @@
         const rows = data.devices || [];
         const body = document.getElementById('deviceTable');
         if (!rows.length) {
-            body.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">没有匹配的记录</td></tr>';
+            body.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">没有匹配的记录</td></tr>';
         } else {
             body.innerHTML = rows.map(function (device) {
-                return '<tr class="stats-device-row" data-device-id="' + escapeHtml(device.deviceId) + '">' +
-                    deviceCell(device.account || '未登录') +
+                const label = deviceLabel(device);
+                return '<tr class="stats-device-row" data-device-id="' + escapeHtml(device.deviceId) +
+                    '" data-device-label="' + escapeHtml(label) + '">' +
+                    deviceCell(label) +
                     deviceCell(PLATFORM_LABELS[device.platform] || device.platform) +
                     deviceCell(device.versionName || '—') +
                     deviceCell(device.osVersion || '—') +
                     deviceCell(device.deviceModel || '—') +
-                    deviceCell(device.ip || '—') +
-                    deviceCell(String(device.reportCount || 0)) +
                     deviceCell(formatTime(device.firstSeen)) +
                     deviceCell(formatTime(device.lastSeen)) +
+                    deviceCell(device.account || '—') +
                     '</tr>';
             }).join('');
             body.querySelectorAll('.stats-device-row').forEach(function (row) {
@@ -577,6 +555,10 @@
         document.getElementById('pageInfo').textContent = '共 ' + totalDevices + ' 条 · ' + from + '-' + to;
         document.getElementById('prevPage').disabled = currentPage <= 1;
         document.getElementById('nextPage').disabled = currentPage * PAGE_SIZE >= totalDevices;
+    }
+
+    function deviceLabel(device) {
+        return device.ip || device.deviceModel || device.deviceId || '未知设备';
     }
 
     function deviceCell(value) {

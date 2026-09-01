@@ -27,7 +27,7 @@ Node.js + Express 实现简易测试api
 
 - `GET /api/stats/products` - 产品列表
 - `GET /api/stats/:appId/summary` - 概览（可加 `?platform=`，含日/周/月打开次数）
-- `GET /api/stats/:appId/devices` - 明细（`platform` / `version` / `account` / `page` / `pageSize`，含累计打开次数）
+- `GET /api/stats/:appId/devices` - 明细（`platform` / `version` / `q` / `page` / `pageSize`，`q` 搜 IP / 机型 / 账号 / deviceId）
 - `GET /api/stats/:appId/devices/:deviceId/daily?days=30` - 单设备每日打开次数
 - `GET /api/stats/:appId/trend?days=30` - 日活与打开次数趋势
 - `PUT /api/stats/:appId` - 修改显示名 `{ "appName": "..." }`
