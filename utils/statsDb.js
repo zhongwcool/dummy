@@ -334,7 +334,7 @@ function upsertReport(payload) {
 
 function listProducts() {
     const since7d = isoDaysAgo(7);
-    const since7dDate = localDate(addDays(new Date(), -6));
+    const today = localDate();
     return getDb().prepare(`
         SELECT
             p.app_id AS appId,
@@ -345,20 +345,20 @@ function listProducts() {
             COALESCE((
                 SELECT SUM(s.launches)
                 FROM daily_stats s
-                WHERE s.app_id = p.app_id AND s.date >= ?
-            ), 0) AS launches7d,
+                WHERE s.app_id = p.app_id AND s.date = ?
+            ), 0) AS launches1d,
             GROUP_CONCAT(DISTINCT d.platform) AS platforms
         FROM products p
         LEFT JOIN devices d ON d.app_id = p.app_id
         GROUP BY p.app_id
         ORDER BY active7d DESC, deviceCount DESC, p.app_id ASC
-    `).all(since7d, since7dDate).map((row) => ({
+    `).all(since7d, today).map((row) => ({
         appId: row.appId,
         appName: row.appName,
         createdAt: row.createdAt,
         deviceCount: row.deviceCount || 0,
         active7d: row.active7d || 0,
-        launches7d: row.launches7d || 0,
+        launches1d: row.launches1d || 0,
         platforms: row.platforms ? row.platforms.split(',').filter(Boolean) : []
     }));
 }
