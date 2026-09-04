@@ -280,7 +280,7 @@
             '<div class="package-name">' + escapeHtml(product.appId) + '</div>' +
             '<div class="stats-product-meta">' +
             '<span>设备 <strong>' + product.deviceCount + '</strong></span>' +
-            '<span>7 日活跃 <strong>' + product.active7d + '</strong></span>' +
+            '<span>今日活跃 <strong>' + (product.active1d || 0) + '</strong></span>' +
             '<span>今日打开 <strong>' + (product.launches1d || 0) + '</strong></span>' +
             '</div>' +
             '<div class="stats-platform-chips">' + chips + '</div>' +
