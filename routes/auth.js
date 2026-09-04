@@ -3,57 +3,17 @@ const express = require('express');
 const router = express.Router();
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const fs = require('fs').promises;
-const path = require('path');
 const {verifyToken} = require("../middleware/auth");
+const usersDb = require('../utils/usersDb');
 require('dotenv').config();
-
-// 用户数据文件路径
-const USERS_FILE = path.join(__dirname, '../data/users.json');
-
-// 读取用户数据
-async function readUsers() {
-    try {
-        const data = await fs.readFile(USERS_FILE, 'utf8');
-        return JSON.parse(data);
-    } catch (error) {
-        console.error('Error reading users file:', error);
-        return {};
-    }
-}
-
-// 保存用户数据
-async function saveUsers(users) {
-    try {
-        await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 4));
-        return true;
-    } catch (error) {
-        console.error('Error saving users file:', error);
-        return false;
-    }
-}
-
-// 更新用户最后登录时间
-async function updateLastLogin(username) {
-    try {
-        const users = await readUsers();
-        if (users[username]) {
-            users[username].last_login = new Date().toISOString();
-            await saveUsers(users);
-        }
-    } catch (error) {
-        console.error('Error updating last login:', error);
-    }
-}
 
 // 登录路由
 router.post('/login', async (req, res) => {
     try {
         const {username, password} = req.body;
-        const users = await readUsers();
-        const user = users[username];
+        const user = usersDb.getUser(username);
 
-        if (!user) {
+        if (!user || typeof password !== 'string') {
             return res.status(401).json({
                 success: false,
                 message: '用户名或密码错误'
@@ -70,13 +30,17 @@ router.post('/login', async (req, res) => {
         }
 
         // 更新最后登录时间
-        await updateLastLogin(username);
+        try {
+            usersDb.touchLastLogin(user.username);
+        } catch (error) {
+            console.error('Error updating last login:', error);
+        }
 
         // 生成 JWT token
         const token = jwt.sign(
             {
                 userId: user.email,
-                username: username,
+                username: user.username,
                 role: user.role
             },
             process.env.JWT_SECRET,
@@ -89,7 +53,7 @@ router.post('/login', async (req, res) => {
             success: true,
             token: token,
             userId: user.email,
-            username: username,
+            username: user.username,
             displayName: user.displayName,
             role: user.role,
             message: '登录成功'

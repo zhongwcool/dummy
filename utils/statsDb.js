@@ -1,23 +1,15 @@
-const fs = require('fs');
-const path = require('path');
+/**
+ * 客户端统计（设备 / 日活 / 打开次数）。
+ * 表结构由 utils/db.js 统一创建。产品档案在 products 表，按上报的 appId 自动建档，
+ * 与应用商店的 apps / app_versions 互不影响。
+ */
+const sharedDb = require('./db');
 
-let DatabaseSync;
-try {
-    ({DatabaseSync} = require('node:sqlite'));
-} catch (error) {
-    throw new Error(`客户端统计需要 Node.js 22.13+ 的内置 sqlite，当前版本是 ${process.version}`);
-}
-
-const DATA_DIR = path.join(__dirname, '../data');
-const DB_PATH = path.join(DATA_DIR, 'stats.db');
+const {withTransaction, nowIso} = sharedDb;
 
 const PLATFORMS = ['android', 'ios', 'windows', 'mac', 'linux'];
 
 let db;
-
-function nowIso() {
-    return new Date().toISOString();
-}
 
 function localDate(date = new Date()) {
     const y = date.getFullYear();
@@ -69,89 +61,29 @@ const OPTIONAL_DEVICE_FIELDS = [
     ['channel', 'channel']
 ];
 
+/**
+ * 取共享连接；首次使用时做统计域自己的历史数据修正（IP 规范化、账号去重、唯一索引）。
+ */
 function getDb() {
     if (db) {
         return db;
     }
 
-    if (!fs.existsSync(DATA_DIR)) {
-        fs.mkdirSync(DATA_DIR, {recursive: true});
-    }
-
-    db = new DatabaseSync(DB_PATH, {timeout: 5000});
-    db.exec('PRAGMA journal_mode = WAL');
-    db.exec('PRAGMA busy_timeout = 5000');
-    db.exec(`
-        CREATE TABLE IF NOT EXISTS products (
-            app_id TEXT PRIMARY KEY,
-            app_name TEXT,
-            created_at TEXT NOT NULL
-        );
-        CREATE TABLE IF NOT EXISTS devices (
-            app_id TEXT NOT NULL,
-            device_id TEXT NOT NULL,
-            platform TEXT NOT NULL,
-            account TEXT,
-            version_name TEXT,
-            version_code INTEGER,
-            os_version TEXT,
-            device_model TEXT,
-            arch TEXT,
-            locale TEXT,
-            channel TEXT,
-            ip TEXT,
-            first_seen TEXT NOT NULL,
-            last_seen TEXT NOT NULL,
-            report_count INTEGER DEFAULT 1,
-            counted_date TEXT,
-            PRIMARY KEY (app_id, device_id)
-        );
-        CREATE INDEX IF NOT EXISTS idx_devices_seen ON devices(app_id, last_seen);
-        CREATE INDEX IF NOT EXISTS idx_devices_account ON devices(app_id, account);
-        CREATE TABLE IF NOT EXISTS daily_stats (
-            app_id TEXT NOT NULL,
-            date TEXT NOT NULL,
-            platform TEXT NOT NULL,
-            version_name TEXT NOT NULL,
-            active_devices INTEGER NOT NULL,
-            launches INTEGER NOT NULL DEFAULT 0,
-            PRIMARY KEY (app_id, date, platform, version_name)
-        );
-        CREATE TABLE IF NOT EXISTS device_daily (
-            app_id TEXT NOT NULL,
-            device_id TEXT NOT NULL,
-            date TEXT NOT NULL,
-            launches INTEGER NOT NULL DEFAULT 0,
-            PRIMARY KEY (app_id, device_id, date)
-        );
-        CREATE INDEX IF NOT EXISTS idx_device_daily_date ON device_daily(app_id, date);
-        CREATE TABLE IF NOT EXISTS meta (
-            key TEXT PRIMARY KEY,
-            value TEXT
-        );
-    `);
-    ensureDailyLaunchesColumn(db);
-    db.exec(`
+    const conn = sharedDb.getDb();
+    conn.exec(`
         UPDATE devices
         SET ip = substr(ip, instr(lower(ip), '::ffff:') + 7)
         WHERE ip IS NOT NULL AND lower(ip) LIKE '%::ffff:%'
     `);
-    dedupeDuplicateAccounts(db);
-    db.exec(`
+    dedupeDuplicateAccounts(conn);
+    conn.exec(`
         CREATE UNIQUE INDEX IF NOT EXISTS idx_devices_account_unique
         ON devices(app_id, account)
         WHERE account IS NOT NULL AND TRIM(account) != ''
     `);
 
+    db = conn;
     return db;
-}
-
-function ensureDailyLaunchesColumn(conn) {
-    const columns = conn.prepare('PRAGMA table_info(daily_stats)').all();
-    if (columns.some((col) => col.name === 'launches')) {
-        return;
-    }
-    conn.exec('ALTER TABLE daily_stats ADD COLUMN launches INTEGER NOT NULL DEFAULT 0');
 }
 
 function isLaunchEvent(payload) {
@@ -263,22 +195,6 @@ function dedupeDuplicateAccounts(conn) {
             updateKept.run(minFirst, reports, group.appId, keep.deviceId);
         }
     });
-}
-
-function withTransaction(conn, fn) {
-    conn.exec('BEGIN IMMEDIATE');
-    try {
-        const result = fn();
-        conn.exec('COMMIT');
-        return result;
-    } catch (error) {
-        try {
-            conn.exec('ROLLBACK');
-        } catch (_) {
-            // 连接已中断时 rollback 可能再次失败
-        }
-        throw error;
-    }
 }
 
 function changedRows(info) {
@@ -662,6 +578,7 @@ function renameProduct(appId, appName) {
     return changedRows(getDb().prepare('UPDATE products SET app_name = ? WHERE app_id = ?').run(appName, appId));
 }
 
+/** 删除产品及其全部统计数据。 */
 function deleteProduct(appId) {
     const conn = getDb();
     return withTransaction(conn, () => {

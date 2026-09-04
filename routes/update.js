@@ -8,14 +8,15 @@ const upload = require('../middleware/fileUpload');
 const assetUpload = require('../middleware/appAssetUpload');
 const {verifyToken} = require('../middleware/auth');
 const ApkReader = require('node-apk-parser');
+const appsDb = require('../utils/appsDb');
 
 // 警告：node-apk-parser 依赖了不安全的 debug 版本
 // 建议在生产环境中使用手动输入版本信息的方式
 // TODO: 考虑使用其他 APK 解析方案或手动输入版本信息
 
-const appVersionsPath = path.join(__dirname, '../data/appVersions.json');
 const appAssetsDir = path.join(__dirname, '../public/app-assets');
-const ASSET_KINDS = new Set(['logo', 'banner']);
+const apkFilesDir = path.join(__dirname, '../public/files');
+const ASSET_KINDS = new Set(appsDb.ASSET_KINDS);
 
 const calculateFileMD5 = (filePath) => {
     return new Promise((resolve, reject) => {
@@ -40,120 +41,52 @@ function hasVersion(version) {
     return Boolean(version && typeof version === 'object' && version.versionCode != null);
 }
 
-function appNameFromPackage(packageName, fallback) {
-    if (fallback && String(fallback).trim()) {
-        return String(fallback).trim();
-    }
-    const parts = String(packageName || '').split('.');
-    return parts[parts.length - 1] || packageName || 'app';
-}
-
-function normalizeStore(raw) {
-    if (raw && raw.apps && typeof raw.apps === 'object' && !Array.isArray(raw.apps)) {
-        return {apps: raw.apps};
-    }
-
-    if (raw && raw.android) {
-        const latest = raw.android.latest || {};
-        const packageName = latest.packageName;
-        if (!packageName) {
-            return {apps: {}};
-        }
-        return {
-            apps: {
-                [packageName]: {
-                    appName: appNameFromPackage(packageName),
-                    packageName,
-                    latest,
-                    history: raw.android.history || []
-                }
-            }
-        };
-    }
-
-    return {apps: {}};
-}
-
-const getAppVersions = () => {
-    try {
-        const data = fs.readFileSync(appVersionsPath, 'utf8');
-        return normalizeStore(JSON.parse(data));
-    } catch (error) {
-        console.error('读取应用版本数据失败:', error);
-        return {apps: {}};
-    }
-};
-
-const saveAppVersions = (data) => {
-    try {
-        fs.writeFileSync(appVersionsPath, JSON.stringify(data, null, 2), 'utf8');
-        return true;
-    } catch (error) {
-        console.error('保存应用版本数据失败:', error);
-        return false;
-    }
-};
-
-function emptyAssets() {
-    return {logo: '', banner: ''};
-}
-
-function getAssets(app) {
-    const raw = app && app.assets ? app.assets : {};
-    return {
-        logo: typeof raw.logo === 'string' ? raw.logo : '',
-        banner: typeof raw.banner === 'string' ? raw.banner : ''
-    };
-}
-
-function listApps(store) {
-    return Object.values(store.apps || {})
-        .filter((app) => hasVersion(app.latest) || (app.history && app.history.length > 0))
-        .map((app) => ({
-            appName: app.appName || appNameFromPackage(app.packageName),
-            packageName: app.packageName,
-            latest: app.latest || {},
-            history: app.history || [],
-            assets: getAssets(app)
-        }));
-}
-
-function findApp(store, packageName) {
-    return (store.apps || {})[packageName] || null;
-}
-
 function assetPublicUrl(filename) {
     return `/app-assets/${filename}`;
+}
+
+function safeUnlink(filePath) {
+    try {
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+    } catch (error) {
+        console.error('删除文件失败:', filePath, error.message);
+    }
 }
 
 function unlinkAssetFile(url) {
     if (!url || typeof url !== 'string' || !url.startsWith('/app-assets/')) {
         return;
     }
-    const filename = path.basename(url);
-    const fullPath = path.join(appAssetsDir, filename);
-    if (fs.existsSync(fullPath)) {
-        fs.unlinkSync(fullPath);
-    }
+    safeUnlink(path.join(appAssetsDir, path.basename(url)));
 }
 
-function unlinkAppAssets(app) {
-    const assets = getAssets(app);
+function unlinkAssets(assets) {
+    if (!assets) {
+        return;
+    }
     unlinkAssetFile(assets.logo);
     unlinkAssetFile(assets.banner);
 }
 
+/** 只删除本服务 /files/ 下托管的 APK，外链不动。 */
 function deleteApkFile(downloadUrl) {
-    if (!downloadUrl) {
+    if (!downloadUrl || typeof downloadUrl !== 'string') {
         return;
     }
-    const filename = downloadUrl.split('/').pop();
-    if (!filename) {
+    let pathname;
+    try {
+        pathname = new URL(downloadUrl, 'http://localhost').pathname;
+    } catch (_) {
         return;
     }
-    const filePath = path.join(__dirname, '../public/files', filename);
-    if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
+    if (!pathname.startsWith('/files/')) {
+        return;
+    }
+    const filename = path.basename(pathname);
+    if (filename) {
+        safeUnlink(path.join(apkFilesDir, filename));
     }
 }
 
@@ -183,8 +116,12 @@ const readApkInfo = async (filePath) => {
  * @access  Public
  */
 router.get('/apps', (req, res) => {
-    const store = getAppVersions();
-    res.json({apps: listApps(store)});
+    try {
+        res.json({apps: appsDb.listApps()});
+    } catch (error) {
+        console.error('读取应用列表失败:', error);
+        res.status(500).json({error: '读取应用列表失败'});
+    }
 });
 
 /**
@@ -201,15 +138,19 @@ router.get('/check', (req, res) => {
         });
     }
 
-    const app = findApp(getAppVersions(), packageName);
-    if (!app || !hasVersion(app.latest)) {
-        return res.status(400).json({
-            error: '无效的包名',
-            message: '请提供正确的应用包名'
-        });
+    try {
+        const latest = appsDb.getLatestVersion(String(packageName));
+        if (!latest) {
+            return res.status(400).json({
+                error: '无效的包名',
+                message: '请提供正确的应用包名'
+            });
+        }
+        res.json(latest);
+    } catch (error) {
+        console.error('检查更新失败:', error);
+        res.status(500).json({error: '检查更新失败'});
     }
-
-    res.json(app.latest);
 });
 
 /**
@@ -218,24 +159,21 @@ router.get('/check', (req, res) => {
  * @access  Public
  */
 router.get('/history', (req, res) => {
-    const store = getAppVersions();
     const {packageName} = req.query;
 
-    if (packageName) {
-        const app = findApp(store, packageName);
-        if (!app) {
-            return res.status(404).json({error: '未找到该应用'});
+    try {
+        if (packageName) {
+            const app = appsDb.getApp(String(packageName));
+            if (!app) {
+                return res.status(404).json({error: '未找到该应用'});
+            }
+            return res.json(app);
         }
-        return res.json({
-            appName: app.appName,
-            packageName: app.packageName,
-            latest: app.latest || {},
-            history: app.history || [],
-            assets: getAssets(app)
-        });
+        res.json({apps: appsDb.listApps()});
+    } catch (error) {
+        console.error('读取版本历史失败:', error);
+        res.status(500).json({error: '读取版本历史失败'});
     }
-
-    res.json({apps: listApps(store)});
 });
 
 /**
@@ -244,36 +182,33 @@ router.get('/history', (req, res) => {
  * @access  Public
  */
 router.get('/', (req, res) => {
-    const store = getAppVersions();
     const {packageName} = req.query;
-    const apps = store.apps || {};
 
-    if (packageName) {
-        const app = findApp(store, packageName);
-        if (!app || !hasVersion(app.latest)) {
-            return res.status(404).json({error: '未找到该应用'});
+    try {
+        if (packageName) {
+            const latest = appsDb.getLatestVersion(String(packageName));
+            if (!latest) {
+                return res.status(404).json({error: '未找到该应用'});
+            }
+            return res.json({hasUpdate: true, ...latest});
         }
-        return res.json({
-            hasUpdate: true,
-            ...app.latest
-        });
-    }
 
-    const keys = Object.keys(apps).filter((key) => hasVersion(apps[key].latest));
-    if (keys.length === 1) {
-        return res.json({
-            hasUpdate: true,
-            ...apps[keys[0]].latest
-        });
-    }
-    if (keys.length === 0) {
-        return res.json({hasUpdate: false});
-    }
+        const latests = appsDb.listLatestVersions();
+        if (latests.length === 1) {
+            return res.json({hasUpdate: true, ...latests[0]});
+        }
+        if (latests.length === 0) {
+            return res.json({hasUpdate: false});
+        }
 
-    return res.status(400).json({
-        error: '请提供 packageName',
-        message: '存在多个应用，请使用 ?packageName= 指定'
-    });
+        return res.status(400).json({
+            error: '请提供 packageName',
+            message: '存在多个应用，请使用 ?packageName= 指定'
+        });
+    } catch (error) {
+        console.error('读取最新版本失败:', error);
+        res.status(500).json({error: '读取最新版本失败'});
+    }
 });
 
 /**
@@ -303,7 +238,7 @@ router.post('/upload', verifyToken, upload.single('apk'), async (req, res) => {
         } = req.body;
 
         if (!updateDescription) {
-            fs.unlinkSync(filePath);
+            safeUnlink(filePath);
             return res.status(400).json({error: '请提供更新说明'});
         }
 
@@ -318,7 +253,7 @@ router.post('/upload', verifyToken, upload.single('apk'), async (req, res) => {
             try {
                 apkInfo = await readApkInfo(filePath);
             } catch (error) {
-                fs.unlinkSync(filePath);
+                safeUnlink(filePath);
                 return res.status(400).json({
                     error: '无法读取APK文件信息，请使用手动输入版本信息选项'
                 });
@@ -326,69 +261,49 @@ router.post('/upload', verifyToken, upload.single('apk'), async (req, res) => {
         }
 
         if (!apkInfo.packageName) {
-            fs.unlinkSync(filePath);
+            safeUnlink(filePath);
             return res.status(400).json({error: '无法确定应用包名'});
+        }
+        if (!Number.isFinite(apkInfo.versionCode)) {
+            safeUnlink(filePath);
+            return res.status(400).json({error: '无效的版本号'});
         }
 
         const fileMD5 = await calculateFileMD5(filePath);
         const baseUrl = `${req.protocol}://${req.get('host')}`;
         const downloadUrl = `${baseUrl}/files/${filename}`;
-        const store = getAppVersions();
-        if (!store.apps) {
-            store.apps = {};
-        }
 
-        const targetPackage = apkInfo.packageName;
-        let app = store.apps[targetPackage];
-        if (!app) {
-            app = {
-                appName: appNameFromPackage(targetPackage, appName),
-                packageName: targetPackage,
-                latest: {},
-                history: [],
-                assets: emptyAssets()
-            };
-            store.apps[targetPackage] = app;
-        } else if (appName && String(appName).trim()) {
-            app.appName = String(appName).trim();
-        }
-
-        if (hasVersion(app.latest)) {
-            app.history = app.history || [];
-            const currentLatest = {
-                ...app.latest,
-                releaseDate: new Date().toISOString().split('T')[0]
-            };
-            const existingVersionIndex = app.history.findIndex(
-                (v) => v.versionCode === currentLatest.versionCode
-            );
-            if (existingVersionIndex === -1) {
-                app.history.unshift(currentLatest);
-            }
-        }
-
-        app.latest = {
-            versionName: apkInfo.versionName,
-            versionCode: apkInfo.versionCode,
-            packageName: targetPackage,
-            updateDescription,
-            downloadUrl,
-            forceUpdate: forceUpdate === 'true' || forceUpdate === true,
-            fileSize: size,
-            md5: fileMD5,
-            uploadDate: new Date().toISOString().split('T')[0]
-        };
-
-        if (saveAppVersions(store)) {
-            res.status(201).json({
-                message: '版本更新成功',
-                appName: app.appName,
-                version: app.latest
+        let result;
+        try {
+            result = appsDb.upsertVersion({
+                packageName: apkInfo.packageName,
+                appName,
+                version: {
+                    versionName: apkInfo.versionName,
+                    versionCode: apkInfo.versionCode,
+                    updateDescription,
+                    downloadUrl,
+                    forceUpdate: forceUpdate === 'true' || forceUpdate === true,
+                    fileSize: size,
+                    md5: fileMD5
+                }
             });
-        } else {
-            fs.unlinkSync(filePath);
-            res.status(500).json({error: '保存版本信息失败'});
+        } catch (error) {
+            safeUnlink(filePath);
+            console.error('保存版本信息失败:', error);
+            return res.status(500).json({error: '保存版本信息失败'});
         }
+
+        // 同一版本号重复上传时，清理被替换的旧安装包
+        if (result.replaced && result.replaced.downloadUrl !== downloadUrl) {
+            deleteApkFile(result.replaced.downloadUrl);
+        }
+
+        res.status(201).json({
+            message: '版本更新成功',
+            appName: result.appName,
+            version: result.version
+        });
     } catch (error) {
         console.error('上传APK文件失败:', error);
         console.error('错误堆栈:', error.stack);
@@ -418,38 +333,35 @@ router.post('/:packageName/assets', verifyToken, (req, res) => {
 
         const kind = String(req.body.kind || '').toLowerCase();
         if (!ASSET_KINDS.has(kind)) {
-            fs.unlinkSync(req.file.path);
+            safeUnlink(req.file.path);
             return res.status(400).json({error: '素材类型无效，请使用 logo 或 banner'});
         }
 
-        const store = getAppVersions();
-        const app = findApp(store, req.params.packageName);
-        if (!app) {
-            fs.unlinkSync(req.file.path);
-            return res.status(404).json({error: '未找到指定应用'});
-        }
+        try {
+            const app = appsDb.getApp(req.params.packageName);
+            if (!app) {
+                safeUnlink(req.file.path);
+                return res.status(404).json({error: '未找到指定应用'});
+            }
 
-        const assets = getAssets(app);
-        const imageUrl = assetPublicUrl(req.file.filename);
+            const previousUrl = app.assets[kind];
+            const imageUrl = assetPublicUrl(req.file.filename);
+            const assets = appsDb.setAsset(req.params.packageName, kind, imageUrl);
+            if (!assets) {
+                safeUnlink(req.file.path);
+                return res.status(404).json({error: '未找到指定应用'});
+            }
+            unlinkAssetFile(previousUrl);
 
-        if (kind === 'logo') {
-            unlinkAssetFile(assets.logo);
-            assets.logo = imageUrl;
-        } else {
-            unlinkAssetFile(assets.banner);
-            assets.banner = imageUrl;
-        }
-
-        app.assets = assets;
-        if (!saveAppVersions(store)) {
-            fs.unlinkSync(req.file.path);
+            return res.status(201).json({
+                message: '素材已更新',
+                assets
+            });
+        } catch (error) {
+            safeUnlink(req.file.path);
+            console.error('保存应用素材失败:', error);
             return res.status(500).json({error: '保存素材信息失败'});
         }
-
-        return res.status(201).json({
-            message: '素材已更新',
-            assets
-        });
     });
 });
 
@@ -465,25 +377,17 @@ router.delete('/:packageName/assets', verifyToken, (req, res) => {
             return res.status(400).json({error: '素材类型无效，请使用 logo 或 banner'});
         }
 
-        const store = getAppVersions();
-        const app = findApp(store, req.params.packageName);
+        const app = appsDb.getApp(req.params.packageName);
         if (!app) {
             return res.status(404).json({error: '未找到指定应用'});
         }
 
-        const assets = getAssets(app);
-        if (kind === 'logo') {
-            unlinkAssetFile(assets.logo);
-            assets.logo = '';
-        } else {
-            unlinkAssetFile(assets.banner);
-            assets.banner = '';
+        const previousUrl = app.assets[kind];
+        const assets = appsDb.setAsset(req.params.packageName, kind, '');
+        if (!assets) {
+            return res.status(404).json({error: '未找到指定应用'});
         }
-
-        app.assets = assets;
-        if (!saveAppVersions(store)) {
-            return res.status(500).json({error: '保存素材信息失败'});
-        }
+        unlinkAssetFile(previousUrl);
 
         return res.json({
             message: '素材已删除',
@@ -503,47 +407,24 @@ router.delete('/:packageName/assets', verifyToken, (req, res) => {
 router.delete('/:packageName/:versionCode', verifyToken, (req, res) => {
     try {
         const {packageName, versionCode} = req.params;
-        const store = getAppVersions();
-        const app = findApp(store, packageName);
-        const targetVersionCode = parseInt(versionCode);
+        const targetVersionCode = parseInt(versionCode, 10);
+        if (!Number.isFinite(targetVersionCode)) {
+            return res.status(400).json({error: '无效的版本号'});
+        }
 
-        if (!app) {
+        if (!appsDb.getApp(packageName)) {
             return res.status(404).json({error: '未找到指定应用'});
         }
 
-        const historyIndex = (app.history || []).findIndex(
-            (v) => v.versionCode === targetVersionCode
-        );
-        const isLatestVersion = hasVersion(app.latest) && app.latest.versionCode === targetVersionCode;
-
-        if (historyIndex === -1 && !isLatestVersion) {
+        const result = appsDb.deleteVersion(packageName, targetVersionCode);
+        if (!result) {
             return res.status(404).json({error: '未找到指定版本'});
         }
 
-        const version = isLatestVersion ? app.latest : app.history[historyIndex];
-        deleteApkFile(version.downloadUrl);
+        deleteApkFile(result.version.downloadUrl);
+        unlinkAssets(result.removedAssets);
 
-        if (isLatestVersion) {
-            if (app.history && app.history.length > 0) {
-                app.latest = app.history[0];
-                app.history.shift();
-            } else {
-                app.latest = {};
-            }
-        } else {
-            app.history.splice(historyIndex, 1);
-        }
-
-        if (!hasVersion(app.latest) && (!app.history || app.history.length === 0)) {
-            unlinkAppAssets(app);
-            delete store.apps[packageName];
-        }
-
-        if (saveAppVersions(store)) {
-            res.json({message: '版本删除成功'});
-        } else {
-            res.status(500).json({error: '保存版本信息失败'});
-        }
+        res.json({message: '版本删除成功'});
     } catch (error) {
         console.error('删除版本失败:', error);
         res.status(500).json({error: '删除版本失败'});

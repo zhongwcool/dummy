@@ -3,38 +3,30 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const {verifyToken, checkRole} = require('../middleware/auth');
-const {userDb} = require('../utils/fileHandler');
-const {ALL_ROLES, USER_MANAGER_ROLES} = require('../utils/roles');
+const usersDb = require('../utils/usersDb');
+const {ALL_ROLES, USER_MANAGER_ROLES, ROLES} = require('../utils/roles');
 
-function sanitizeUser(username, user) {
+function sanitizeUser(user, actorUsername, adminCount) {
+    const isLastAdmin = user.role === ROLES.ADMIN && adminCount <= 1;
     return {
-        username,
+        username: user.username,
         email: user.email,
         displayName: user.displayName,
         role: user.role,
         created_at: user.created_at,
-        last_login: user.last_login
+        last_login: user.last_login,
+        canDelete: user.username !== actorUsername && !isLastAdmin,
+        isLastAdmin
     };
 }
 
 // 获取用户列表（需要 admin 权限）
-router.get('/', verifyToken, checkRole(USER_MANAGER_ROLES), async (req, res) => {
+router.get('/', verifyToken, checkRole(USER_MANAGER_ROLES), (req, res) => {
     try {
-        const users = await userDb.read();
-
-        // 过滤敏感信息
-        const sanitizedUsers = Object.entries(users).map(([username, user]) => ({
-            username,
-            email: user.email,
-            displayName: user.displayName,
-            role: user.role,
-            created_at: user.created_at,
-            last_login: user.last_login
-        }));
-
+        const adminCount = usersDb.countAdmins();
         res.json({
             success: true,
-            users: sanitizedUsers
+            users: usersDb.listUsers().map((user) => sanitizeUser(user, req.user.username, adminCount))
         });
     } catch (error) {
         console.error('Error getting users:', error);
@@ -46,10 +38,9 @@ router.get('/', verifyToken, checkRole(USER_MANAGER_ROLES), async (req, res) => 
 });
 
 // 获取当前用户信息
-router.get('/me', verifyToken, async (req, res) => {
+router.get('/me', verifyToken, (req, res) => {
     try {
-        const users = await userDb.read();
-        const user = users[req.user.username];
+        const user = usersDb.getUser(req.user.username);
 
         if (!user) {
             return res.status(404).json({
@@ -58,19 +49,9 @@ router.get('/me', verifyToken, async (req, res) => {
             });
         }
 
-        // 过滤敏感信息
-        const userInfo = {
-            username: req.user.username,
-            email: user.email,
-            displayName: user.displayName,
-            role: user.role,
-            created_at: user.created_at,
-            last_login: user.last_login
-        };
-
         res.json({
             success: true,
-            user: userInfo
+            user: sanitizeUser(user, req.user.username, usersDb.countAdmins())
         });
     } catch (error) {
         console.error('Error getting user info:', error);
@@ -100,27 +81,24 @@ router.post('/', verifyToken, checkRole(USER_MANAGER_ROLES), async (req, res) =>
             });
         }
 
-        const users = await userDb.read();
-        if (users[trimmedUsername]) {
+        if (usersDb.userExists(trimmedUsername)) {
             return res.status(409).json({
                 success: false,
                 message: '用户名已存在'
             });
         }
 
-        users[trimmedUsername] = {
+        const user = usersDb.createUser({
+            username: trimmedUsername,
             password: await bcrypt.hash(password, 10),
             email: email || '',
             displayName: displayName || trimmedUsername,
-            role: role || 'user',
-            created_at: new Date().toISOString(),
-            last_login: null
-        };
+            role: role || 'user'
+        });
 
-        await userDb.write(users);
         res.status(201).json({
             success: true,
-            user: sanitizeUser(trimmedUsername, users[trimmedUsername]),
+            user: sanitizeUser(user, req.user.username, usersDb.countAdmins()),
             message: '用户创建成功'
         });
     } catch (error) {
@@ -136,10 +114,8 @@ router.put('/:username', verifyToken, checkRole(USER_MANAGER_ROLES), async (req,
     try {
         const username = req.params.username;
         const {email, displayName, role, password} = req.body;
-        const users = await userDb.read();
-        const user = users[username];
 
-        if (!user) {
+        if (!usersDb.userExists(username)) {
             return res.status(404).json({
                 success: false,
                 message: '用户不存在'
@@ -153,17 +129,30 @@ router.put('/:username', verifyToken, checkRole(USER_MANAGER_ROLES), async (req,
             });
         }
 
-        if (email !== undefined) user.email = email;
-        if (displayName !== undefined) user.displayName = displayName;
-        if (role) user.role = role;
-        if (password) user.password = await bcrypt.hash(password, 10);
+        if (role && role !== ROLES.ADMIN && usersDb.isSoleAdmin(username)) {
+            return res.status(400).json({
+                success: false,
+                message: '不能取消最后一个管理员'
+            });
+        }
 
-        users[username] = user;
-        await userDb.write(users);
+        const user = usersDb.updateUser(username, {
+            email,
+            displayName,
+            role,
+            password: password ? await bcrypt.hash(password, 10) : undefined
+        });
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: '用户不存在'
+            });
+        }
 
         res.json({
             success: true,
-            user: sanitizeUser(username, user),
+            user: sanitizeUser(user, req.user.username, usersDb.countAdmins()),
             message: '用户更新成功'
         });
     } catch (error) {
@@ -175,7 +164,7 @@ router.put('/:username', verifyToken, checkRole(USER_MANAGER_ROLES), async (req,
     }
 });
 
-router.delete('/:username', verifyToken, checkRole(USER_MANAGER_ROLES), async (req, res) => {
+router.delete('/:username', verifyToken, checkRole(USER_MANAGER_ROLES), (req, res) => {
     try {
         const username = req.params.username;
         if (req.user.username === username) {
@@ -184,17 +173,19 @@ router.delete('/:username', verifyToken, checkRole(USER_MANAGER_ROLES), async (r
                 message: '不能删除当前登录账号'
             });
         }
+        if (usersDb.isSoleAdmin(username)) {
+            return res.status(400).json({
+                success: false,
+                message: '不能删除最后一个管理员'
+            });
+        }
 
-        const users = await userDb.read();
-        if (!users[username]) {
+        if (!usersDb.deleteUser(username)) {
             return res.status(404).json({
                 success: false,
                 message: '用户不存在'
             });
         }
-
-        delete users[username];
-        await userDb.write(users);
 
         res.json({
             success: true,

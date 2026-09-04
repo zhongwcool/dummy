@@ -20,7 +20,7 @@ Node.js + Express 实现简易测试api
 
 管理页：`/admin/stats`（需 admin 登录）
 
-数据在 `data/stats.db`（Node 内置 sqlite）。已登录按 `appId + account` 一行，未登录按 `deviceId` 一行。打开次数按自然日写入；心跳（`event=heartbeat`）不计次。
+数据在 `data/app.db`（见下方「数据存储」）。已登录按 `appId + account` 一行，未登录按 `deviceId` 一行。打开次数按自然日写入；心跳（`event=heartbeat`）不计次。
 
 **客户端接入（Android / Windows 等）见 [docs/client-stats.md](docs/client-stats.md)。** 在其它仓库改客户端时，Cursor 使用个人 skill `client-stats-report`。
 
@@ -33,6 +33,30 @@ Node.js + Express 实现简易测试api
 - `GET /api/stats/:appId/trend?days=30` - 日活与打开次数趋势
 - `PUT /api/stats/:appId` - 修改显示名 `{ "appName": "..." }`
 - `DELETE /api/stats/:appId` - 删除该产品全部统计
+
+## 数据存储
+
+账号、应用版本、客户端统计都在同一个 SQLite 库 `data/app.db`（Node 内置 `node:sqlite`，WAL 模式）。连接与建表统一在 `utils/db.js`，业务模块只通过它读写：
+
+| 表                                                  | 用途                                                              | 访问模块           |
+|-----------------------------------------------------|-------------------------------------------------------------------|--------------------|
+| `users`                                             | 后台账号（bcrypt 密码、角色、最后登录）                           | `utils/usersDb.js` |
+| `apps`                                              | 应用商店的应用（包名、显示名、logo / banner）                     | `utils/appsDb.js`  |
+| `app_versions`                                      | 每个应用的版本记录，`version_code` 最大者即最新版                 | `utils/appsDb.js`  |
+| `products`                                          | 客户端统计的产品档案，按上报的 appId 自动建档，与 `apps` 互不影响 | `utils/statsDb.js` |
+| `devices` / `daily_stats` / `device_daily` / `meta` | 客户端统计                                                        | `utils/statsDb.js` |
+
+APK 与图片本体仍是磁盘文件（`public/files/`、`public/app-assets/`），库里只存地址。
+
+**从旧版本升级**：首次启动时自动完成，无需手工操作。
+
+- `data/stats.db` 会 checkpoint 后改名为 `data/app.db`，原有统计表原样保留；
+- 若曾把统计产品并进 `apps` 表，启动时会拆回独立的 `products` 表，商店只留下有版本的应用；
+- `data/users.json`、`data/appVersions.json` 导入对应表后改名为 `*.json.migrated`，确认无误后可删除；
+- 若 `users` 表仍为空（全新部署），会创建默认管理员 `admin` / `admin`。请登录后尽快改密。不能删除或降级库里最后一个 admin 角色；
+- 升级前请先停掉旧进程，否则 Windows 下改名会因文件被占用而失败。
+
+可用环境变量 `DATA_DIR` 指定数据目录（默认 `./data`）。备份时不要直接复制 `app.db`（WAL 模式下部分数据还在 `-wal` 文件里），用 `sqlite3 data/app.db ".backup backup.db"` 或先停服再复制整个 `data/` 目录。
 
 ## 运行必要条件
 
@@ -91,10 +115,10 @@ Node.js + Express 实现简易测试api
 
 ### 用户管理
 
-- GET /api/users - 获取用户列表
+- GET /api/users - 获取用户列表（含 `canDelete` / `isLastAdmin`）
 - POST /api/users - 创建新用户
-- PUT /api/users/:id - 更新用户信息
-- DELETE /api/users/:id - 删除用户
+- PUT /api/users/:username - 更新用户信息（不能取消最后一个管理员）
+- DELETE /api/users/:username - 删除用户（不能删除当前登录账号或最后一个管理员）
 
 ## 开发说明
 
@@ -105,15 +129,17 @@ project/
   ├── middleware/
   │   └── auth.js          # 认证相关中间件（验证token和角色）
   ├── utils/
-  │   ├── fileHandler.js   # 文件操作工具（JSON数据读写）
-  │   └── statsDb.js       # 客户端统计 SQLite
+  │   ├── db.js            # SQLite 连接、建表、旧数据迁移
+  │   ├── usersDb.js       # 账号读写
+  │   ├── appsDb.js        # 应用与版本读写
+  │   └── statsDb.js       # 客户端统计读写与每日聚合
   ├── routes/
   │   ├── auth.js          # 认证路由（登录、登出、验证token）
   │   ├── users.js         # 用户管理路由
+  │   ├── update.js        # 应用版本发布与更新检查
   │   └── stats.js         # 客户端统计上报与查询
   ├── data/
-  │   ├── users.json       # 用户数据
-  │   └── stats.db         # 客户端统计（git 忽略）
+  │   └── app.db           # 全部业务数据（git 忽略）
   ├── app.js              # 应用主入口
   ├── package.json        # 项目配置
   ├── .env               # 环境变量配置
@@ -126,17 +152,19 @@ project/
     - `auth.js` - JWT token验证和角色权限控制
 
 2. **utils/** - 工具函数目录
-    - `fileHandler.js` - JSON文件数据库操作
-    - `statsDb.js` - 客户端统计 SQLite 读写与每日聚合
+    - `db.js` - 统一 SQLite 连接、建表与旧 JSON / stats.db 迁移
+    - `usersDb.js` - 账号数据访问
+    - `appsDb.js` - 应用与版本数据访问
+    - `statsDb.js` - 客户端统计读写与每日聚合
 
 3. **routes/** - 路由目录
     - `auth.js` - 用户认证相关接口
     - `users.js` - 用户管理相关接口
+    - `update.js` - 应用版本发布与更新检查
     - `stats.js` - 客户端统计上报与管理查询
 
 4. **data/** - 数据存储目录
-    - `users.json` - 用户数据存储
-    - `stats.db` - 客户端统计 SQLite
+    - `app.db` - 全部业务数据（SQLite，见「数据存储」）
 
 ### 环境变量配置
 

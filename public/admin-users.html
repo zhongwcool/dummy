@@ -65,7 +65,7 @@
                             <option value="user">user（业务管理，不含用户管理）</option>
                             <option value="guest">guest（仅 APP / 图床）</option>
                         </select>
-                        <div class="form-text">user 可管理 APP、图床和客户端统计。</div>
+                        <div class="form-text" id="roleHint">user 可管理 APP、图床和客户端统计。</div>
                     </div>
                     <div class="mb-0">
                         <label for="formPassword" class="form-label" id="passwordLabel">密码</label>
@@ -106,6 +106,9 @@
                 return;
             }
             tbody.innerHTML = users.map(function (item) {
+                const deleteBtn = item.canDelete
+                    ? '<button class="btn btn-outline-danger btn-sm" onclick="deleteUser(\'' + encodeURIComponent(item.username) + '\')">删除</button>'
+                    : '';
                 return `
                     <tr>
                         <td>${escapeHtml(item.username)}</td>
@@ -115,7 +118,7 @@
                         <td>${escapeHtml(item.last_login ? new Date(item.last_login).toLocaleString() : '-')}</td>
                         <td class="text-end">
                             <button class="btn btn-outline-primary btn-sm" onclick="openEdit(decodeURIComponent('${encodeURIComponent(JSON.stringify(item))}'))">编辑</button>
-                            <button class="btn btn-outline-danger btn-sm" onclick="deleteUser('${encodeURIComponent(item.username)}')">删除</button>
+                            ${deleteBtn}
                         </td>
                     </tr>
                 `;
@@ -133,6 +136,8 @@
         document.getElementById('formDisplayName').value = '';
         document.getElementById('formEmail').value = '';
         document.getElementById('formRole').value = 'user';
+        document.getElementById('formRole').disabled = false;
+        document.getElementById('roleHint').textContent = 'user 可管理 APP、图床和客户端统计。';
         document.getElementById('formPassword').value = '';
         document.getElementById('formPassword').required = true;
         document.getElementById('passwordLabel').textContent = '密码';
@@ -148,6 +153,10 @@
         document.getElementById('formDisplayName').value = item.displayName || '';
         document.getElementById('formEmail').value = item.email || '';
         document.getElementById('formRole').value = item.role || 'user';
+        document.getElementById('formRole').disabled = Boolean(item.isLastAdmin);
+        document.getElementById('roleHint').textContent = item.isLastAdmin
+            ? '这是最后一个管理员，不能改为其他角色。'
+            : 'user 可管理 APP、图床和客户端统计。';
         document.getElementById('formPassword').value = '';
         document.getElementById('formPassword').required = false;
         document.getElementById('passwordLabel').textContent = '密码（留空则不修改）';
