@@ -14,7 +14,7 @@
     <div class="admin-actions">
         <span class="text-muted small" id="currentUser"></span>
         <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#uploadModal">上传</button>
-        <a href="/admin" class="btn btn-outline-secondary btn-sm">管理首页</a>
+        <a href="/admin" class="btn btn-light btn-sm">管理首页</a>
         <button type="button" class="btn btn-dark btn-sm" id="logoutBtn">退出</button>
     </div>
 </div>
@@ -339,7 +339,7 @@
     async function removeAsset(kind) {
         if (!assetsPackageName) return;
         const label = kind === 'logo' ? 'Logo' : 'Banner';
-        if (!confirm('确定删除' + label + '吗？')) return;
+        if (!await confirmAction('确定删除' + label + '吗？')) return;
 
         try {
             const data = await apiRequest(`/api/update/${encodeURIComponent(assetsPackageName)}/assets?kind=${encodeURIComponent(kind)}`, {
@@ -387,16 +387,18 @@
     }
 
     function deleteVersion(encodedPackageName, versionCode) {
-        if (!confirm('确定要删除此版本吗？此操作不可恢复！')) return;
-        const packageName = decodeURIComponent(encodedPackageName);
-        apiRequest(`/api/update/${encodeURIComponent(packageName)}/${versionCode}`, {
-            method: 'DELETE',
-            headers: authHeaders()
-        }).then(function () {
-            alert('删除成功');
-            return fetchApps();
-        }).catch(function (error) {
-            alert(error.message || '删除失败，请重试');
+        confirmAction('确定要删除此版本吗？此操作不可恢复！').then(function (ok) {
+            if (!ok) return;
+            const packageName = decodeURIComponent(encodedPackageName);
+            apiRequest(`/api/update/${encodeURIComponent(packageName)}/${versionCode}`, {
+                method: 'DELETE',
+                headers: authHeaders()
+            }).then(function () {
+                alert('删除成功');
+                return fetchApps();
+            }).catch(function (error) {
+                alert(error.message || '删除失败，请重试');
+            });
         });
     }
 

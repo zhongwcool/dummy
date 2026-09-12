@@ -128,7 +128,7 @@
                         }
                     });
                     card.querySelector('.delete-btn').addEventListener('click', async function () {
-                        if (!confirm('确定删除这张图片吗？')) return;
+                        if (!await confirmAction('确定删除这张图片吗？')) return;
                         try {
                             await apiRequest(`/api/image/${encodeURIComponent(item.filename)}`, {
                                 method: 'DELETE',

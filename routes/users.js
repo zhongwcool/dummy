@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
-const {verifyToken, checkRole} = require('../middleware/auth');
+const {verifyToken, checkRole, confirmPassword} = require('../middleware/auth');
 const usersDb = require('../utils/usersDb');
 const {ALL_ROLES, USER_MANAGER_ROLES, ROLES} = require('../utils/roles');
 
@@ -164,7 +164,7 @@ router.put('/:username', verifyToken, checkRole(USER_MANAGER_ROLES), async (req,
     }
 });
 
-router.delete('/:username', verifyToken, checkRole(USER_MANAGER_ROLES), (req, res) => {
+router.delete('/:username', verifyToken, checkRole(USER_MANAGER_ROLES), confirmPassword, (req, res) => {
     try {
         const username = req.params.username;
         if (req.user.username === username) {

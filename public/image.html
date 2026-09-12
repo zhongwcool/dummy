@@ -207,8 +207,15 @@
             transition: opacity 0.2s ease;
         }
 
-        .image-item:hover .image-overlay {
+        .image-item:hover .image-overlay,
+        .image-item:focus-within .image-overlay {
             opacity: 1;
+        }
+
+        @media (hover: none) {
+            .image-item .image-overlay {
+                opacity: 1;
+            }
         }
 
         .image-meta {

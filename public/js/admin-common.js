@@ -57,6 +57,99 @@ function authHeaders(extra) {
     return headers;
 }
 
+function deleteAuthHeaders(password) {
+    return authHeaders({ 'X-Confirm-Password': password });
+}
+
+let confirmActionResolver = null;
+
+function finishConfirmAction(ok) {
+    const root = document.getElementById('adminConfirmDialog');
+    if (root) {
+        root.hidden = true;
+    }
+    const resolve = confirmActionResolver;
+    confirmActionResolver = null;
+    if (resolve) {
+        resolve(!!ok);
+    }
+}
+
+function ensureConfirmDialog() {
+    let root = document.getElementById('adminConfirmDialog');
+    if (root) {
+        return root;
+    }
+
+    root = document.createElement('div');
+    root.id = 'adminConfirmDialog';
+    root.className = 'admin-confirm';
+    root.hidden = true;
+    root.setAttribute('role', 'dialog');
+    root.setAttribute('aria-modal', 'true');
+    root.setAttribute('aria-labelledby', 'adminConfirmTitle');
+    root.innerHTML =
+        '<div class="admin-confirm-card">' +
+            '<h2 class="admin-confirm-title" id="adminConfirmTitle">确认删除</h2>' +
+            '<p class="admin-confirm-msg" id="adminConfirmMessage"></p>' +
+            '<div class="admin-confirm-actions">' +
+                '<button type="button" class="btn btn-light btn-sm" data-confirm="no">取消</button>' +
+                '<button type="button" class="btn btn-outline-danger btn-sm" data-confirm="yes">确定删除</button>' +
+            '</div>' +
+        '</div>';
+
+    root.addEventListener('click', function (event) {
+        if (event.target === root) {
+            finishConfirmAction(false);
+        }
+    });
+    root.querySelector('[data-confirm="no"]').addEventListener('click', function () {
+        finishConfirmAction(false);
+    });
+    root.querySelector('[data-confirm="yes"]').addEventListener('click', function () {
+        finishConfirmAction(true);
+    });
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && root && !root.hidden) {
+            finishConfirmAction(false);
+        }
+    });
+    document.body.appendChild(root);
+    return root;
+}
+
+function confirmAction(message) {
+    const root = ensureConfirmDialog();
+    if (confirmActionResolver) {
+        finishConfirmAction(false);
+    }
+    document.getElementById('adminConfirmMessage').textContent = message;
+    root.hidden = false;
+    const cancelBtn = root.querySelector('[data-confirm="no"]');
+    if (cancelBtn) {
+        cancelBtn.focus();
+    }
+    return new Promise(function (resolve) {
+        confirmActionResolver = resolve;
+    });
+}
+
+async function confirmDelete(message) {
+    const ok = await confirmAction(message);
+    if (!ok) {
+        return null;
+    }
+    const password = window.prompt('请输入登录密码以确认删除');
+    if (password == null) {
+        return null;
+    }
+    if (!String(password)) {
+        alert('请输入密码');
+        return null;
+    }
+    return String(password);
+}
+
 function clearAuth() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);

@@ -1,5 +1,18 @@
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const logger = require('../utils/logger');
+const usersDb = require('../utils/usersDb');
+
+function sanitizeHeaders(headers) {
+    const copy = Object.assign({}, headers);
+    if (copy.authorization) {
+        copy.authorization = '[redacted]';
+    }
+    if (copy['x-confirm-password']) {
+        copy['x-confirm-password'] = '[redacted]';
+    }
+    return copy;
+}
 
 // 验证 JWT Token 的中间件
 const verifyToken = (req, res, next) => {
@@ -23,7 +36,7 @@ const verifyToken = (req, res, next) => {
             requestPath: req.path,
             requestIP: req.ip,
             requestMethod: req.method,
-            requestHeaders: req.headers,
+            requestHeaders: sanitizeHeaders(req.headers),
             userAgent: req.get('User-Agent')
         });
 
@@ -56,7 +69,35 @@ const checkRole = (allowedRoles) => {
     };
 };
 
+const confirmPassword = async (req, res, next) => {
+    const password = req.headers['x-confirm-password'];
+    if (typeof password !== 'string' || !password) {
+        return res.status(403).json({
+            success: false,
+            message: '请输入密码确认删除'
+        });
+    }
+
+    try {
+        const username = req.user && req.user.username;
+        const user = username ? usersDb.getUser(username) : null;
+        if (!user || !await bcrypt.compare(password, user.password)) {
+            return res.status(403).json({
+                success: false,
+                message: '密码错误'
+            });
+        }
+        next();
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: '密码确认失败'
+        });
+    }
+};
+
 module.exports = {
     verifyToken,
-    checkRole
+    checkRole,
+    confirmPassword
 }; 

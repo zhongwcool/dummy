@@ -62,7 +62,8 @@
                 <option value="">全部版本</option>
             </select>
         </div>
-        <div class="table-responsive surface user-panel stats-device-panel">
+        <div class="surface user-panel stats-device-panel">
+            <div class="table-responsive stats-table-scroll">
             <table class="table table-hover mb-0 stats-device-table">
                 <colgroup>
                     <col class="col-ip">
@@ -88,6 +89,7 @@
                 </thead>
                 <tbody id="deviceTable"></tbody>
             </table>
+            </div>
             <div class="stats-pager">
                 <span class="text-muted small" id="pageInfo">—</span>
                 <div class="d-flex gap-2">
@@ -99,28 +101,6 @@
     </div>
 </div>
 
-<div class="modal fade" id="renameModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <form id="renameForm">
-                <div class="modal-header">
-                    <h2 class="modal-title fs-5">修改显示名</h2>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="关闭"></button>
-                </div>
-                <div class="modal-body">
-                    <label for="renameInput" class="form-label">显示名</label>
-                    <input type="text" class="form-control" id="renameInput" required maxlength="64">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">取消</button>
-                    <button type="submit" class="btn btn-primary">保存</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="/js/admin-common.js"></script>
 <script>
@@ -142,7 +122,6 @@
     let selectedDeviceId = '';
     let versionChart;
     let trendChart;
-    let renameModal;
 
     document.addEventListener('DOMContentLoaded', async function () {
         const user = await requireAdminAuth(['admin', 'user']);
@@ -150,12 +129,10 @@
             return;
         }
         fillAuthBar();
-        renameModal = new bootstrap.Modal(document.getElementById('renameModal'));
 
         document.getElementById('backBtn').addEventListener('click', showList);
         document.getElementById('renameBtn').addEventListener('click', openRename);
         document.getElementById('deleteBtn').addEventListener('click', deleteProduct);
-        document.getElementById('renameForm').addEventListener('submit', saveRename);
         document.getElementById('trendResetBtn').addEventListener('click', function () {
             loadTrend();
         });
@@ -419,7 +396,14 @@
             options: {
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: {position: 'bottom', labels: {boxWidth: 12}}
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 12,
+                            font: {size: window.innerWidth < 768 ? 11 : 12},
+                            padding: window.innerWidth < 768 ? 8 : 10
+                        }
+                    }
                 }
             }
         });
@@ -579,15 +563,16 @@
             ' ' + pad(date.getHours()) + ':' + pad(date.getMinutes());
     }
 
-    function openRename() {
-        document.getElementById('renameInput').value = currentAppName;
-        renameModal.show();
-    }
-
-    async function saveRename(event) {
-        event.preventDefault();
-        const appName = document.getElementById('renameInput').value.trim();
-        if (!appName) {
+    async function openRename(event) {
+        const next = window.prompt('显示名', currentAppName);
+        if (event && event.currentTarget) {
+            event.currentTarget.blur();
+        }
+        if (next == null) {
+            return;
+        }
+        const appName = next.trim().slice(0, 64);
+        if (!appName || appName === currentAppName) {
             return;
         }
         try {
@@ -596,7 +581,6 @@
                 headers: authHeaders({'Content-Type': 'application/json'}),
                 body: JSON.stringify({appName: appName})
             });
-            renameModal.hide();
             await loadDetail();
         } catch (error) {
             alert(error.message || '改名失败');
@@ -604,7 +588,8 @@
     }
 
     async function deleteProduct(event) {
-        if (!confirm('将删除该产品的全部统计数据，确定继续？')) {
+        const password = await confirmDelete('将删除该产品的全部统计数据，确定继续？');
+        if (!password) {
             if (event && event.currentTarget) {
                 event.currentTarget.blur();
             }
@@ -613,7 +598,7 @@
         try {
             await apiRequest(statsUrl(currentAppId, ''), {
                 method: 'DELETE',
-                headers: authHeaders()
+                headers: deleteAuthHeaders(password)
             });
             location.hash = '';
         } catch (error) {

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const {verifyToken, checkRole} = require('../middleware/auth');
+const {verifyToken, checkRole, confirmPassword} = require('../middleware/auth');
 const statsDb = require('../utils/statsDb');
 const {OPERATOR_ROLES} = require('../utils/roles');
 
@@ -440,7 +440,7 @@ router.put('/:appId', verifyToken, checkRole(OPERATOR_ROLES), (req, res) => {
  * @desc    删除产品及全部统计数据
  * @access  Private (admin, user)
  */
-router.delete('/:appId', verifyToken, checkRole(OPERATOR_ROLES), (req, res) => {
+router.delete('/:appId', verifyToken, checkRole(OPERATOR_ROLES), confirmPassword, (req, res) => {
     try {
         const appId = requireAppId(req, res);
         if (!appId) {

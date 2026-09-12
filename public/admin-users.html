@@ -198,11 +198,12 @@
 
     async function deleteUser(encodedUsername) {
         const username = decodeURIComponent(encodedUsername);
-        if (!confirm(`确定删除用户 ${username} 吗？`)) return;
+        const password = await confirmDelete(`确定删除用户 ${username} 吗？`);
+        if (!password) return;
         try {
             await apiRequest(`/api/users/${encodeURIComponent(username)}`, {
                 method: 'DELETE',
-                headers: authHeaders()
+                headers: deleteAuthHeaders(password)
             });
             await loadUsers();
         } catch (error) {

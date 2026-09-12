@@ -86,14 +86,27 @@ body::before {
 .admin-actions {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
+    flex-shrink: 0;
     gap: 0.65rem;
+}
+
+.admin-actions #currentUser {
+    max-width: 8.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .admin-actions .btn,
 .stats-module-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     border: 0;
     border-radius: 999px;
     padding: 0.4rem 0.9rem;
+    white-space: nowrap;
     box-shadow: var(--shadow-low);
     cursor: pointer;
     transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease), background-color 0.25s var(--ease);
@@ -342,6 +355,60 @@ body::before {
     align-items: center;
 }
 
+.admin-confirm {
+    position: fixed;
+    inset: 0;
+    z-index: 8000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    background: rgba(20, 24, 32, 0.38);
+    backdrop-filter: blur(6px);
+}
+
+.admin-confirm[hidden] {
+    display: none !important;
+}
+
+.admin-confirm-card {
+    width: min(22rem, 100%);
+    padding: 1.25rem 1.25rem 1.1rem;
+    border-radius: 22px;
+    background: #fff;
+    box-shadow: var(--shadow-high);
+}
+
+.admin-confirm-title {
+    margin: 0 0 0.45rem;
+    font-size: 1.05rem;
+    font-weight: 650;
+}
+
+.admin-confirm-msg {
+    margin: 0 0 1.15rem;
+    color: var(--muted);
+    line-height: 1.55;
+}
+
+.admin-confirm-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.65rem;
+}
+
+.admin-confirm-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 4.5rem;
+    border: 0;
+    border-radius: 999px;
+    padding: 0.4rem 0.9rem;
+    white-space: nowrap;
+    box-shadow: var(--shadow-low);
+}
+
 .page-shell {
     width: min(1120px, calc(100% - 2.5rem));
     margin: 0 auto;
@@ -387,7 +454,8 @@ body::before {
 }
 
 .admin-app-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 320px));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 320px));
+    justify-content: start;
 }
 
 .app-tile {
@@ -569,6 +637,8 @@ body::before {
 }
 
 .app-column {
+    width: 100%;
+    max-width: 320px;
     background: var(--paper);
     backdrop-filter: blur(18px);
     border: 0;
@@ -1003,6 +1073,14 @@ body::before {
     overflow: hidden;
 }
 
+.stats-table-scroll,
+.table-responsive.user-panel {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+}
+
 .user-panel .table {
     margin: 0;
 }
@@ -1347,6 +1425,12 @@ h2.stats-platform-group-title span {
     width: auto;
     min-width: 140px;
     border-radius: 999px;
+    padding: 0.5rem 1.1rem;
+    line-height: 1.4;
+}
+
+.stats-filters .form-select {
+    padding-right: 2.4rem;
 }
 
 .stats-pager {
@@ -1373,13 +1457,15 @@ h2.stats-platform-group-title span {
     align-items: center;
     gap: 0.85rem;
     min-width: 0;
-    flex: 1;
+    flex: 1 1 16rem;
     flex-wrap: wrap;
 }
 
 .stats-module-actions {
     display: none;
     align-items: center;
+    flex-wrap: wrap;
+    flex-shrink: 0;
     gap: 0.5rem;
     padding-left: 0.9rem;
     border-left: 1px solid rgba(20, 24, 32, 0.1);
@@ -1398,16 +1484,17 @@ h2.stats-platform-group-title span {
 
 .stats-device-table {
     width: 100%;
+    min-width: 1360px;
     table-layout: fixed;
 }
 
-.stats-device-table col.col-ip { width: 14%; }
-.stats-device-table col.col-platform { width: 8%; }
-.stats-device-table col.col-version { width: 12%; }
-.stats-device-table col.col-os { width: 10%; }
-.stats-device-table col.col-model { width: 16%; }
-.stats-device-table col.col-time { width: 12%; }
-.stats-device-table col.col-account { width: 16%; }
+.stats-device-table col.col-ip { width: 152px; }
+.stats-device-table col.col-platform { width: 108px; }
+.stats-device-table col.col-version { width: 140px; }
+.stats-device-table col.col-os { width: 128px; }
+.stats-device-table col.col-model { width: 220px; }
+.stats-device-table col.col-time { width: 188px; }
+.stats-device-table col.col-account { width: 220px; }
 
 .stats-device-row {
     cursor: pointer;
@@ -1429,8 +1516,8 @@ h2.stats-platform-group-title span {
 }
 
 .stats-device-panel .table > :not(caption) > * > * {
-    padding-left: 1.15rem;
-    padding-right: 1.15rem;
+    padding-left: 0.9rem;
+    padding-right: 0.9rem;
 }
 
 @media (max-width: 1200px) {
@@ -1450,6 +1537,10 @@ h2.stats-platform-group-title span {
         padding-top: 1rem;
     }
 
+    .dashboard-shell .admin-header {
+        width: min(1120px, calc(100% - 1.5rem));
+    }
+
     .stats-shell {
         width: calc(100% - 1.5rem);
     }
@@ -1458,8 +1549,15 @@ h2.stats-platform-group-title span {
         grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     }
 
+    .public-home .app-grid {
+        justify-content: center;
+        align-content: start;
+        padding: 1.25rem 0 2rem;
+        grid-template-columns: repeat(auto-fill, minmax(158px, 200px));
+    }
+
     .admin-app-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 320px));
     }
 
     .history-grid {
@@ -1491,10 +1589,224 @@ h2.stats-platform-group-title span {
         grid-template-columns: 1fr;
     }
 
+    .stats-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
     .stats-filters .form-control,
     .stats-filters .form-select {
         min-width: 0;
         width: 100%;
-        flex: 1 1 140px;
+        flex: 1 1 auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .page-shell,
+    .stats-shell {
+        width: calc(100% - 1.2rem);
+        padding-top: 0.85rem;
+        padding-bottom: 4.5rem;
+    }
+
+    .dashboard-shell .admin-header {
+        width: min(1120px, calc(100% - 1.2rem));
+    }
+
+    .admin-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.7rem;
+    }
+
+    .admin-header h1,
+    .stats-shell .admin-header h1 {
+        font-size: 1.25rem;
+        overflow-wrap: anywhere;
+    }
+
+    .admin-actions {
+        width: 100%;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .admin-actions #currentUser {
+        display: inline-flex;
+        align-items: center;
+        flex: 0 1 auto;
+        min-width: 0;
+        max-width: 9rem;
+        min-height: 40px;
+    }
+
+    .admin-actions .btn,
+    .stats-module-actions .btn {
+        min-height: 40px;
+        min-width: 4.5rem;
+        padding: 0.45rem 0.9rem;
+        flex: 0 0 auto;
+    }
+
+    .stats-header-left {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        flex: 1 1 auto;
+        min-width: 0;
+        gap: 0.65rem;
+    }
+
+    .stats-module-actions {
+        width: 100%;
+        padding-left: 0;
+        border-left: 0;
+        gap: 0.5rem;
+    }
+
+    .stats-product-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .stats-kpi {
+        padding: 0.7rem 0.75rem;
+    }
+
+    .stats-kpi .label {
+        white-space: normal;
+    }
+
+    .stats-chart-card {
+        padding: 0.95rem 0.9rem 0.85rem;
+        border-radius: 20px;
+    }
+
+    .stats-chart-wrap {
+        height: 200px;
+        min-height: 200px;
+        max-height: 200px;
+    }
+
+    .stats-pager {
+        flex-wrap: wrap;
+        padding: 0.75rem 0.85rem;
+        position: sticky;
+        left: 0;
+    }
+
+    .user-panel:not(.stats-device-panel) table {
+        min-width: 720px;
+    }
+
+    .image-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+
+    .modal-dialog {
+        margin: 0.6rem;
+    }
+
+    .service-footer {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 20;
+        padding: 0.5rem 1rem max(0.75rem, env(safe-area-inset-bottom, 0px));
+        text-align: center;
+        background: linear-gradient(180deg, rgba(238, 241, 246, 0) 0%, rgba(238, 241, 246, 0.94) 42%);
+    }
+
+    .dashboard-main {
+        padding-bottom: 4.5rem;
+    }
+}
+
+@media (orientation: landscape) and (max-width: 960px) {
+    .admin-header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: nowrap;
+        gap: 0.75rem;
+    }
+
+    .admin-actions {
+        width: auto;
+        margin-left: auto;
+        flex-wrap: nowrap;
+        flex-shrink: 0;
+    }
+
+    .admin-actions #currentUser {
+        flex: 0 1 auto;
+        max-width: 8rem;
+    }
+
+    .stats-header-left {
+        flex-direction: row;
+        align-items: center;
+        width: auto;
+        flex: 1 1 auto;
+        min-width: 0;
+        gap: 0.75rem;
+    }
+
+    .stats-module-actions {
+        width: auto;
+        padding-left: 0.85rem;
+        border-left: 1px solid rgba(20, 24, 32, 0.1);
+    }
+
+    .stats-product-grid {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 320px));
+        justify-content: start;
+    }
+
+    .admin-app-grid {
+        grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 320px));
+        justify-content: start;
+    }
+
+    .stats-kpi-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .stats-charts {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+    }
+
+    .stats-filters {
+        flex-direction: row;
+        align-items: center;
+    }
+
+    .stats-filters .form-control,
+    .stats-filters .form-select {
+        width: auto;
+        min-width: 160px;
+        flex: 1 1 160px;
+    }
+}
+
+@media (hover: none) {
+    .admin-actions .btn:hover,
+    .admin-actions .btn:focus-visible,
+    .stats-module-actions .btn:hover,
+    .stats-module-actions .btn:focus-visible,
+    .stats-product-card:hover,
+    .stats-product-card:focus,
+    .entry-card:hover,
+    .app-tile:hover,
+    .app-tile:focus {
+        transform: none;
+        box-shadow: var(--shadow-low), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .image-item .image-overlay {
+        opacity: 1;
     }
 }
