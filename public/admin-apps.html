@@ -339,17 +339,31 @@
     async function removeAsset(kind) {
         if (!assetsPackageName) return;
         const label = kind === 'logo' ? 'Logo' : 'Banner';
-        if (!await confirmAction('确定删除' + label + '吗？')) return;
+        const packageName = assetsPackageName;
+        const snapshot = getAssets(findCachedApp(packageName));
 
-        try {
-            const data = await apiRequest(`/api/update/${encodeURIComponent(assetsPackageName)}/assets?kind=${encodeURIComponent(kind)}`, {
-                method: 'DELETE',
-                headers: authHeaders()
-            });
-            patchCachedAssets(data.assets);
-        } catch (error) {
-            alert(error.message || '删除失败，请重试');
-        }
+        scheduleUndoableDelete({
+            message: label + '已删除，5s内可以撤销',
+            apply: function () {
+                const next = getAssets(findCachedApp(packageName));
+                next[kind] = '';
+                assetsPackageName = packageName;
+                patchCachedAssets(next);
+            },
+            restore: function () {
+                assetsPackageName = packageName;
+                patchCachedAssets(snapshot);
+            },
+            commit: function () {
+                return apiRequest(`/api/update/${encodeURIComponent(packageName)}/assets?kind=${encodeURIComponent(kind)}`, {
+                    method: 'DELETE',
+                    headers: authHeaders()
+                }).then(function (data) {
+                    assetsPackageName = packageName;
+                    patchCachedAssets(data.assets);
+                });
+            }
+        });
     }
 
     function patchCachedAssets(assets) {
@@ -386,19 +400,43 @@
         `;
     }
 
+    function removeVersionFromCache(packageName, versionCode) {
+        const app = findCachedApp(packageName);
+        if (!app) return;
+        const code = Number(versionCode);
+        if (app.latest && Number(app.latest.versionCode) === code) {
+            const next = (app.history || []).shift();
+            app.latest = next || {};
+        }
+        app.history = (app.history || []).filter(function (item) {
+            return Number(item.versionCode) !== code;
+        });
+    }
+
     function deleteVersion(encodedPackageName, versionCode) {
-        confirmAction('确定要删除此版本吗？此操作不可恢复！').then(function (ok) {
-            if (!ok) return;
-            const packageName = decodeURIComponent(encodedPackageName);
-            apiRequest(`/api/update/${encodeURIComponent(packageName)}/${versionCode}`, {
-                method: 'DELETE',
-                headers: authHeaders()
-            }).then(function () {
-                alert('删除成功');
-                return fetchApps();
-            }).catch(function (error) {
-                alert(error.message || '删除失败，请重试');
-            });
+        const packageName = decodeURIComponent(encodedPackageName);
+        let snapshot;
+        scheduleUndoableDelete({
+            message: '版本已删除，5s内可以撤销',
+            apply: function () {
+                snapshot = JSON.parse(JSON.stringify(appsCache));
+                removeVersionFromCache(packageName, versionCode);
+                renderApps(appsCache);
+            },
+            restore: function () {
+                if (snapshot) {
+                    appsCache = snapshot;
+                    renderApps(appsCache);
+                }
+            },
+            commit: function () {
+                return apiRequest(`/api/update/${encodeURIComponent(packageName)}/${versionCode}`, {
+                    method: 'DELETE',
+                    headers: authHeaders()
+                }).then(function () {
+                    return fetchApps();
+                });
+            }
         });
     }
 

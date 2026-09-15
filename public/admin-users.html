@@ -19,20 +19,22 @@
     </div>
 </div>
 
-<div class="table-responsive surface user-panel">
-    <table class="table table-hover mb-0">
-        <thead>
-        <tr>
-            <th>用户名</th>
-            <th>显示名</th>
-            <th>邮箱</th>
-            <th>角色</th>
-            <th>最后登录</th>
-            <th></th>
-        </tr>
-        </thead>
-        <tbody id="userTable"></tbody>
-    </table>
+<div class="surface user-panel">
+    <div class="table-responsive user-table-scroll">
+        <table class="table table-hover mb-0 user-table">
+            <thead>
+            <tr>
+                <th>用户名</th>
+                <th>显示名</th>
+                <th>邮箱</th>
+                <th>角色</th>
+                <th>最后登录</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody id="userTable"></tbody>
+        </table>
+    </div>
 </div>
 </div>
 
@@ -110,13 +112,13 @@
                     ? '<button class="btn btn-outline-danger btn-sm" onclick="deleteUser(\'' + encodeURIComponent(item.username) + '\')">删除</button>'
                     : '';
                 return `
-                    <tr>
-                        <td>${escapeHtml(item.username)}</td>
-                        <td>${escapeHtml(item.displayName || '')}</td>
-                        <td>${escapeHtml(item.email || '')}</td>
-                        <td>${escapeHtml(item.role || '')}</td>
-                        <td>${escapeHtml(item.last_login ? new Date(item.last_login).toLocaleString() : '-')}</td>
-                        <td class="text-end">
+                    <tr data-username="${escapeHtml(item.username)}">
+                        <td data-label="用户名"><span class="user-cell">${escapeHtml(item.username)}</span></td>
+                        <td data-label="显示名"><span class="user-cell">${escapeHtml(item.displayName || '')}</span></td>
+                        <td data-label="邮箱"><span class="user-cell">${escapeHtml(item.email || '')}</span></td>
+                        <td data-label="角色"><span class="user-cell">${escapeHtml(item.role || '')}</span></td>
+                        <td data-label="最后登录"><span class="user-cell">${escapeHtml(formatLastLogin(item.last_login))}</span></td>
+                        <td class="user-row-actions">
                             <button class="btn btn-outline-primary btn-sm" onclick="openEdit(decodeURIComponent('${encodeURIComponent(JSON.stringify(item))}'))">编辑</button>
                             ${deleteBtn}
                         </td>
@@ -126,6 +128,25 @@
         } catch (error) {
             tbody.innerHTML = `<tr><td colspan="6" class="text-danger">${escapeHtml(error.message || '加载失败')}</td></tr>`;
         }
+    }
+
+    function formatLastLogin(value) {
+        if (!value) {
+            return '-';
+        }
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) {
+            return '-';
+        }
+        return date.toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
     }
 
     function openCreate() {
@@ -198,17 +219,28 @@
 
     async function deleteUser(encodedUsername) {
         const username = decodeURIComponent(encodedUsername);
-        const password = await confirmDelete(`确定删除用户 ${username} 吗？`);
+        const password = await confirmDelete('请输入登录密码以删除用户 ' + username);
         if (!password) return;
-        try {
-            await apiRequest(`/api/users/${encodeURIComponent(username)}`, {
-                method: 'DELETE',
-                headers: deleteAuthHeaders(password)
-            });
-            await loadUsers();
-        } catch (error) {
-            alert(error.message || '删除失败');
-        }
+        const row = Array.prototype.find.call(document.querySelectorAll('#userTable tr[data-username]'), function (tr) {
+            return tr.getAttribute('data-username') === username;
+        });
+        scheduleUndoableDelete({
+            message: '用户已删除，5s内可以撤销',
+            apply: function () {
+                if (row) row.hidden = true;
+            },
+            restore: function () {
+                if (row) row.hidden = false;
+            },
+            commit: function () {
+                return apiRequest(`/api/users/${encodeURIComponent(username)}`, {
+                    method: 'DELETE',
+                    headers: deleteAuthHeaders(password)
+                }).then(function () {
+                    return loadUsers();
+                });
+            }
+        });
     }
 </script>
 </body>

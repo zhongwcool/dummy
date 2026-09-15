@@ -127,18 +127,25 @@
                             setStatus('复制失败', true);
                         }
                     });
-                    card.querySelector('.delete-btn').addEventListener('click', async function () {
-                        if (!await confirmAction('确定删除这张图片吗？')) return;
-                        try {
-                            await apiRequest(`/api/image/${encodeURIComponent(item.filename)}`, {
-                                method: 'DELETE',
-                                headers: authHeaders()
-                            });
-                            setStatus('删除成功');
-                            await loadImages();
-                        } catch (error) {
-                            setStatus(error.message || '删除失败', true);
-                        }
+                    card.querySelector('.delete-btn').addEventListener('click', function () {
+                        scheduleUndoableDelete({
+                            message: '图片已删除，5s内可以撤销',
+                            apply: function () {
+                                card.hidden = true;
+                            },
+                            restore: function () {
+                                card.hidden = false;
+                            },
+                            commit: function () {
+                                return apiRequest(`/api/image/${encodeURIComponent(item.filename)}`, {
+                                    method: 'DELETE',
+                                    headers: authHeaders()
+                                }).then(function () {
+                                    setStatus('删除成功');
+                                    return loadImages();
+                                });
+                            }
+                        });
                     });
                     grid.appendChild(card);
                 });

@@ -61,85 +61,146 @@ function deleteAuthHeaders(password) {
     return authHeaders({ 'X-Confirm-Password': password });
 }
 
-let confirmActionResolver = null;
+const UNDO_DELETE_MS = 5000;
+let pendingUndoDelete = null;
 
-function finishConfirmAction(ok) {
-    const root = document.getElementById('adminConfirmDialog');
-    if (root) {
-        root.hidden = true;
-    }
-    const resolve = confirmActionResolver;
-    confirmActionResolver = null;
-    if (resolve) {
-        resolve(!!ok);
-    }
-}
-
-function ensureConfirmDialog() {
-    let root = document.getElementById('adminConfirmDialog');
+function ensureUndoToast() {
+    let root = document.getElementById('adminUndoToast');
     if (root) {
         return root;
     }
 
     root = document.createElement('div');
-    root.id = 'adminConfirmDialog';
-    root.className = 'admin-confirm';
+    root.id = 'adminUndoToast';
+    root.className = 'admin-undo';
     root.hidden = true;
-    root.setAttribute('role', 'dialog');
-    root.setAttribute('aria-modal', 'true');
-    root.setAttribute('aria-labelledby', 'adminConfirmTitle');
+    root.setAttribute('role', 'status');
+    root.setAttribute('aria-live', 'polite');
     root.innerHTML =
-        '<div class="admin-confirm-card">' +
-            '<h2 class="admin-confirm-title" id="adminConfirmTitle">确认删除</h2>' +
-            '<p class="admin-confirm-msg" id="adminConfirmMessage"></p>' +
-            '<div class="admin-confirm-actions">' +
-                '<button type="button" class="btn btn-light btn-sm" data-confirm="no">取消</button>' +
-                '<button type="button" class="btn btn-outline-danger btn-sm" data-confirm="yes">确定删除</button>' +
-            '</div>' +
+        '<div class="admin-undo-card">' +
+            '<p class="admin-undo-msg" id="adminUndoMessage"></p>' +
+            '<span class="admin-undo-countdown" id="adminUndoCountdown" aria-hidden="true"></span>' +
+            '<button type="button" class="btn btn-light btn-sm" data-undo>撤销</button>' +
         '</div>';
-
-    root.addEventListener('click', function (event) {
-        if (event.target === root) {
-            finishConfirmAction(false);
-        }
-    });
-    root.querySelector('[data-confirm="no"]').addEventListener('click', function () {
-        finishConfirmAction(false);
-    });
-    root.querySelector('[data-confirm="yes"]').addEventListener('click', function () {
-        finishConfirmAction(true);
-    });
-    document.addEventListener('keydown', function (event) {
-        if (event.key === 'Escape' && root && !root.hidden) {
-            finishConfirmAction(false);
-        }
-    });
+    root.querySelector('[data-undo]').addEventListener('click', undoPendingDelete);
     document.body.appendChild(root);
     return root;
 }
 
-function confirmAction(message) {
-    const root = ensureConfirmDialog();
-    if (confirmActionResolver) {
-        finishConfirmAction(false);
-    }
-    document.getElementById('adminConfirmMessage').textContent = message;
+function showUndoToast(text, seconds) {
+    const root = ensureUndoToast();
+    document.getElementById('adminUndoMessage').textContent = text;
+    document.getElementById('adminUndoCountdown').textContent = seconds + 's';
     root.hidden = false;
-    const cancelBtn = root.querySelector('[data-confirm="no"]');
-    if (cancelBtn) {
-        cancelBtn.focus();
+}
+
+function hideUndoToast() {
+    const root = document.getElementById('adminUndoToast');
+    if (root) {
+        root.hidden = true;
     }
-    return new Promise(function (resolve) {
-        confirmActionResolver = resolve;
+}
+
+function clearUndoTimers(job) {
+    if (!job) {
+        return;
+    }
+    if (job.timer) {
+        clearTimeout(job.timer);
+        job.timer = null;
+    }
+    if (job.tick) {
+        clearInterval(job.tick);
+        job.tick = null;
+    }
+}
+
+function bindUndoPageFlush() {
+    if (bindUndoPageFlush.bound) {
+        return;
+    }
+    bindUndoPageFlush.bound = true;
+    window.addEventListener('pagehide', function () {
+        const job = pendingUndoDelete;
+        if (!job) {
+            return;
+        }
+        pendingUndoDelete = null;
+        clearUndoTimers(job);
+        hideUndoToast();
+        try {
+            job.commit();
+        } catch (error) {
+            // ignore unload errors
+        }
     });
 }
 
-async function confirmDelete(message) {
-    const ok = await confirmAction(message);
-    if (!ok) {
-        return null;
+async function flushPendingUndoDelete() {
+    const job = pendingUndoDelete;
+    if (!job) {
+        return;
     }
-    const password = window.prompt('请输入登录密码以确认删除');
+    pendingUndoDelete = null;
+    clearUndoTimers(job);
+    hideUndoToast();
+    try {
+        await job.commit();
+    } catch (error) {
+        job.restore();
+        alert(error.message || '删除失败');
+    }
+}
+
+function undoPendingDelete() {
+    const job = pendingUndoDelete;
+    if (!job) {
+        return;
+    }
+    pendingUndoDelete = null;
+    clearUndoTimers(job);
+    hideUndoToast();
+    job.restore();
+}
+
+function scheduleUndoableDelete(options) {
+    bindUndoPageFlush();
+    return flushPendingUndoDelete().then(function () {
+        try {
+            options.apply();
+        } catch (error) {
+            alert(error.message || '删除失败');
+            return;
+        }
+
+        const startedAt = Date.now();
+        const message = options.message || '已删除，5s内可以撤销';
+        const job = {
+            commit: options.commit,
+            restore: options.restore,
+            timer: null,
+            tick: null
+        };
+
+        function tick() {
+            const remain = Math.max(0, UNDO_DELETE_MS - (Date.now() - startedAt));
+            const seconds = Math.max(1, Math.ceil(remain / 1000));
+            showUndoToast(message, seconds);
+        }
+
+        job.tick = setInterval(tick, 200);
+        job.timer = setTimeout(function () {
+            if (pendingUndoDelete === job) {
+                flushPendingUndoDelete();
+            }
+        }, UNDO_DELETE_MS);
+        pendingUndoDelete = job;
+        tick();
+    });
+}
+
+async function confirmDelete(hint) {
+    const password = window.prompt(hint || '请输入登录密码以确认删除');
     if (password == null) {
         return null;
     }
