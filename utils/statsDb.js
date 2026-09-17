@@ -342,7 +342,7 @@ function listProducts() {
             COALESCE(NULLIF(p.app_name, ''), p.app_id) AS appName,
             p.created_at AS createdAt,
             COUNT(d.device_id) AS deviceCount,
-            SUM(CASE WHEN d.last_seen >= ? THEN 1 ELSE 0 END) AS active1d,
+            SUM(CASE WHEN d.last_seen >= ? AND ${countedDeviceSql('d')} THEN 1 ELSE 0 END) AS active1d,
             COALESCE((
                 SELECT SUM(dd.launches)
                 FROM device_daily dd
@@ -352,7 +352,7 @@ function listProducts() {
             ), 0) AS launches1d,
             GROUP_CONCAT(DISTINCT d.platform) AS platforms
         FROM products p
-        LEFT JOIN devices d ON d.app_id = p.app_id AND ${countedDeviceSql('d')}
+        LEFT JOIN devices d ON d.app_id = p.app_id
         GROUP BY p.app_id
         ORDER BY active1d DESC, deviceCount DESC, p.app_id ASC
     `).all(sinceToday, today).map((row) => ({
@@ -432,11 +432,14 @@ function getSummary(appId, platform) {
     const countStmt = (extraSql, extraParams = []) => conn.prepare(
         `SELECT COUNT(*) AS n FROM devices d WHERE d.app_id = ?${filter.sql}${counted}${extraSql}`
     ).get(...baseParams, ...extraParams).n;
+    const inventoryCount = conn.prepare(
+        `SELECT COUNT(*) AS n FROM devices d WHERE d.app_id = ?${filter.sql}`
+    ).get(...baseParams).n;
 
     const byPlatform = conn.prepare(`
         SELECT d.platform, COUNT(*) AS count
         FROM devices d
-        WHERE d.app_id = ?${counted}
+        WHERE d.app_id = ?
         GROUP BY d.platform
         ORDER BY count DESC
     `).all(appId);
@@ -444,7 +447,7 @@ function getSummary(appId, platform) {
     const byVersion = conn.prepare(`
         SELECT COALESCE(d.version_name, '') AS versionName, COUNT(*) AS count
         FROM devices d
-        WHERE d.app_id = ?${filter.sql}${counted}
+        WHERE d.app_id = ?${filter.sql}
         GROUP BY d.version_name
         ORDER BY count DESC
         LIMIT 20
@@ -475,7 +478,7 @@ function getSummary(appId, platform) {
         appId: product.app_id,
         appName: product.app_name || product.app_id,
         createdAt: product.created_at,
-        totalDevices: countStmt(''),
+        totalDevices: inventoryCount,
         active1d,
         active7d,
         active30d,
