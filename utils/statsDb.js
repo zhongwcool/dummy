@@ -8,6 +8,7 @@ const sharedDb = require('./db');
 const {withTransaction, nowIso} = sharedDb;
 
 const PLATFORMS = ['android', 'ios', 'windows', 'mac', 'linux'];
+const EXCLUSION_KINDS = ['ip', 'account'];
 
 let db;
 
@@ -343,13 +344,15 @@ function listProducts() {
             COUNT(d.device_id) AS deviceCount,
             SUM(CASE WHEN d.last_seen >= ? THEN 1 ELSE 0 END) AS active1d,
             COALESCE((
-                SELECT SUM(s.launches)
-                FROM daily_stats s
-                WHERE s.app_id = p.app_id AND s.date = ?
+                SELECT SUM(dd.launches)
+                FROM device_daily dd
+                INNER JOIN devices dx ON dx.app_id = dd.app_id AND dx.device_id = dd.device_id
+                WHERE dd.app_id = p.app_id AND dd.date = ?
+                  AND ${countedDeviceSql('dx')}
             ), 0) AS launches1d,
             GROUP_CONCAT(DISTINCT d.platform) AS platforms
         FROM products p
-        LEFT JOIN devices d ON d.app_id = p.app_id
+        LEFT JOIN devices d ON d.app_id = p.app_id AND ${countedDeviceSql('d')}
         GROUP BY p.app_id
         ORDER BY active1d DESC, deviceCount DESC, p.app_id ASC
     `).all(sinceToday, today).map((row) => ({
@@ -363,11 +366,57 @@ function listProducts() {
     }));
 }
 
-function platformFilter(platform) {
+function platformFilter(platform, alias) {
+    const column = alias ? `${alias}.platform` : 'platform';
     if (platform && PLATFORMS.includes(platform)) {
-        return {sql: ' AND platform = ?', params: [platform]};
+        return {sql: ` AND ${column} = ?`, params: [platform]};
     }
     return {sql: '', params: []};
+}
+
+/** 该行 IP 或账号命中本产品排除名单。 */
+function excludedMatchSql(alias) {
+    return `EXISTS (
+        SELECT 1 FROM stats_exclusions e
+        WHERE e.app_id = ${alias}.app_id
+          AND (
+            (e.kind = 'ip' AND IFNULL(${alias}.ip, '') != '' AND ${alias}.ip = e.value)
+            OR (
+                e.kind = 'account'
+                AND IFNULL(TRIM(${alias}.account), '') != ''
+                AND TRIM(${alias}.account) = e.value
+            )
+          )
+    )`;
+}
+
+function countedDeviceSql(alias) {
+    return `NOT ${excludedMatchSql(alias)}`;
+}
+
+function listExclusionsRows(conn, appId) {
+    return conn.prepare(`
+        SELECT kind, value, created_at AS createdAt
+        FROM stats_exclusions
+        WHERE app_id = ?
+        ORDER BY kind ASC, value ASC
+    `).all(appId);
+}
+
+function normalizeExclusion(kind, value) {
+    const normalizedKind = String(kind || '').trim().toLowerCase();
+    if (!EXCLUSION_KINDS.includes(normalizedKind)) {
+        return {error: 'kind 必须是 ip 或 account'};
+    }
+    const text = String(value == null ? '' : value).trim();
+    if (!text) {
+        return {error: '请提供要排除的 IP 或账号'};
+    }
+    const max = normalizedKind === 'ip' ? 45 : 128;
+    if (text.length > max) {
+        return {error: '排除项过长'};
+    }
+    return {kind: normalizedKind, value: text};
 }
 
 function getSummary(appId, platform) {
@@ -377,47 +426,50 @@ function getSummary(appId, platform) {
         return null;
     }
 
-    const filter = platformFilter(platform);
+    const filter = platformFilter(platform, 'd');
+    const counted = ` AND ${countedDeviceSql('d')}`;
     const baseParams = [appId, ...filter.params];
     const countStmt = (extraSql, extraParams = []) => conn.prepare(
-        `SELECT COUNT(*) AS n FROM devices WHERE app_id = ?${filter.sql}${extraSql}`
+        `SELECT COUNT(*) AS n FROM devices d WHERE d.app_id = ?${filter.sql}${counted}${extraSql}`
     ).get(...baseParams, ...extraParams).n;
 
     const byPlatform = conn.prepare(`
-        SELECT platform, COUNT(*) AS count
-        FROM devices
-        WHERE app_id = ?
-        GROUP BY platform
+        SELECT d.platform, COUNT(*) AS count
+        FROM devices d
+        WHERE d.app_id = ?${counted}
+        GROUP BY d.platform
         ORDER BY count DESC
     `).all(appId);
 
     const byVersion = conn.prepare(`
-        SELECT COALESCE(version_name, '') AS versionName, COUNT(*) AS count
-        FROM devices
-        WHERE app_id = ?${filter.sql}
-        GROUP BY version_name
+        SELECT COALESCE(d.version_name, '') AS versionName, COUNT(*) AS count
+        FROM devices d
+        WHERE d.app_id = ?${filter.sql}${counted}
+        GROUP BY d.version_name
         ORDER BY count DESC
         LIMIT 20
     `).all(...baseParams);
 
     const uniqueAccounts = conn.prepare(`
-        SELECT COUNT(DISTINCT account) AS n
-        FROM devices
-        WHERE app_id = ?${filter.sql} AND account IS NOT NULL AND TRIM(account) != ''
+        SELECT COUNT(DISTINCT d.account) AS n
+        FROM devices d
+        WHERE d.app_id = ?${filter.sql}${counted}
+          AND d.account IS NOT NULL AND TRIM(d.account) != ''
     `).get(...baseParams).n;
 
     const today = localDate();
     const sumLaunches = (sinceDate) => conn.prepare(`
-        SELECT COALESCE(SUM(launches), 0) AS n
-        FROM daily_stats
-        WHERE app_id = ? AND date >= ?${filter.sql}
+        SELECT COALESCE(SUM(dd.launches), 0) AS n
+        FROM device_daily dd
+        INNER JOIN devices d ON d.app_id = dd.app_id AND d.device_id = dd.device_id
+        WHERE dd.app_id = ? AND dd.date >= ?${filter.sql}${counted}
     `).get(appId, sinceDate, ...filter.params).n;
     const launches1d = sumLaunches(today);
     const launches7d = sumLaunches(localDate(addDays(new Date(), -6)));
     const launches30d = sumLaunches(localDate(addDays(new Date(), -29)));
-    const active1d = countStmt(' AND last_seen >= ?', [isoDaysAgo(1)]);
-    const active7d = countStmt(' AND last_seen >= ?', [isoDaysAgo(7)]);
-    const active30d = countStmt(' AND last_seen >= ?', [isoDaysAgo(30)]);
+    const active1d = countStmt(' AND d.last_seen >= ?', [isoDaysAgo(1)]);
+    const active7d = countStmt(' AND d.last_seen >= ?', [isoDaysAgo(7)]);
+    const active30d = countStmt(' AND d.last_seen >= ?', [isoDaysAgo(30)]);
 
     return {
         appId: product.app_id,
@@ -433,7 +485,8 @@ function getSummary(appId, platform) {
         launches30d,
         avgLaunches7d: avgLaunches(launches7d, active7d),
         byPlatform,
-        byVersion
+        byVersion,
+        exclusions: listExclusionsRows(conn, appId)
     };
 }
 
@@ -466,7 +519,11 @@ function listDevices(options) {
     const page = Math.max(1, parseInt(options.page, 10) || 1);
     const pageSize = Math.min(100, Math.max(1, parseInt(options.pageSize, 10) || 20));
     const whereSql = where.join(' AND ');
+    const excludedSql = excludedMatchSql('d');
     const total = conn.prepare(`SELECT COUNT(*) AS n FROM devices d WHERE ${whereSql}`).get(...params).n;
+    const excludedCount = conn.prepare(
+        `SELECT COUNT(*) AS n FROM devices d WHERE ${whereSql} AND ${excludedSql}`
+    ).get(...params).n;
     const devices = conn.prepare(`
         SELECT
             d.app_id AS appId,
@@ -483,14 +540,47 @@ function listDevices(options) {
             d.ip,
             d.first_seen AS firstSeen,
             d.last_seen AS lastSeen,
-            d.report_count AS reportCount
+            d.report_count AS reportCount,
+            CASE WHEN IFNULL(d.ip, '') != '' AND EXISTS (
+                SELECT 1 FROM stats_exclusions e
+                WHERE e.app_id = d.app_id AND e.kind = 'ip' AND e.value = d.ip
+            ) THEN 1 ELSE 0 END AS excludedByIp,
+            CASE WHEN IFNULL(TRIM(d.account), '') != '' AND EXISTS (
+                SELECT 1 FROM stats_exclusions e
+                WHERE e.app_id = d.app_id AND e.kind = 'account' AND e.value = TRIM(d.account)
+            ) THEN 1 ELSE 0 END AS excludedByAccount
         FROM devices d
         WHERE ${whereSql}
         ORDER BY d.last_seen DESC
         LIMIT ? OFFSET ?
     `).all(...params, pageSize, (page - 1) * pageSize);
 
-    return {total, page, pageSize, devices};
+    return {
+        total,
+        page,
+        pageSize,
+        excludedCount,
+        devices: devices.map((row) => ({
+            appId: row.appId,
+            deviceId: row.deviceId,
+            platform: row.platform,
+            account: row.account,
+            versionName: row.versionName,
+            versionCode: row.versionCode,
+            osVersion: row.osVersion,
+            deviceModel: row.deviceModel,
+            arch: row.arch,
+            locale: row.locale,
+            channel: row.channel,
+            ip: row.ip,
+            firstSeen: row.firstSeen,
+            lastSeen: row.lastSeen,
+            reportCount: row.reportCount,
+            excludedByIp: Boolean(row.excludedByIp),
+            excludedByAccount: Boolean(row.excludedByAccount),
+            excluded: Boolean(row.excludedByIp || row.excludedByAccount)
+        }))
+    };
 }
 
 function getDeviceDaily(appId, deviceId, days) {
@@ -540,13 +630,33 @@ function getTrend(appId, days, platform) {
     const span = Math.min(365, Math.max(1, parseInt(days, 10) || 30));
     const startDate = localDate(addDays(new Date(), 1 - span));
     const filter = platformFilter(platform);
-    const rows = getDb().prepare(`
+    const deviceFilter = platformFilter(platform, 'd');
+    const conn = getDb();
+    const rows = conn.prepare(`
         SELECT date, platform, version_name AS versionName,
                active_devices AS activeDevices, COALESCE(launches, 0) AS launches
         FROM daily_stats
         WHERE app_id = ? AND date >= ?${filter.sql}
         ORDER BY date ASC
     `).all(appId, startDate, ...filter.params);
+
+    const omitted = conn.prepare(`
+        SELECT dd.date AS date,
+               COUNT(*) AS activeDevices,
+               COALESCE(SUM(dd.launches), 0) AS launches
+        FROM device_daily dd
+        INNER JOIN devices d ON d.app_id = dd.app_id AND d.device_id = dd.device_id
+        WHERE dd.app_id = ? AND dd.date >= ?${deviceFilter.sql}
+          AND ${excludedMatchSql('d')}
+        GROUP BY dd.date
+    `).all(appId, startDate, ...deviceFilter.params);
+
+    const omittedActive = {};
+    const omittedLaunches = {};
+    for (const row of omitted) {
+        omittedActive[row.date] = row.activeDevices;
+        omittedLaunches[row.date] = row.launches;
+    }
 
     const totals = {};
     const launchTotals = {};
@@ -559,6 +669,35 @@ function getTrend(appId, days, platform) {
         if (Object.prototype.hasOwnProperty.call(totals, row.date)) {
             totals[row.date] += row.activeDevices;
             launchTotals[row.date] += row.launches;
+        }
+    }
+    for (const date of Object.keys(totals)) {
+        totals[date] = Math.max(0, totals[date] - (omittedActive[date] || 0));
+        launchTotals[date] = Math.max(0, launchTotals[date] - (omittedLaunches[date] || 0));
+    }
+
+    const excludedDevices = conn.prepare(`
+        SELECT d.counted_date AS countedDate, d.last_seen AS lastSeen
+        FROM devices d
+        WHERE d.app_id = ?${deviceFilter.sql}
+          AND ${excludedMatchSql('d')}
+    `).all(appId, ...deviceFilter.params);
+    for (const row of excludedDevices) {
+        const dates = new Set();
+        if (row.countedDate) {
+            dates.add(row.countedDate);
+        }
+        if (row.lastSeen) {
+            const seen = new Date(row.lastSeen);
+            if (!Number.isNaN(seen.getTime())) {
+                dates.add(localDate(seen));
+            }
+        }
+        for (const date of dates) {
+            if (!Object.prototype.hasOwnProperty.call(totals, date) || omittedActive[date]) {
+                continue;
+            }
+            totals[date] = Math.max(0, totals[date] - 1);
         }
     }
 
@@ -584,6 +723,7 @@ function deleteProduct(appId) {
     return withTransaction(conn, () => {
         conn.prepare('DELETE FROM device_daily WHERE app_id = ?').run(appId);
         conn.prepare('DELETE FROM daily_stats WHERE app_id = ?').run(appId);
+        conn.prepare('DELETE FROM stats_exclusions WHERE app_id = ?').run(appId);
         conn.prepare('DELETE FROM devices WHERE app_id = ?').run(appId);
         return changedRows(conn.prepare('DELETE FROM products WHERE app_id = ?').run(appId));
     });
@@ -593,10 +733,11 @@ function rollupDate(dateStr) {
     const conn = getDb();
     conn.prepare(`
         INSERT INTO daily_stats (app_id, date, platform, version_name, active_devices, launches)
-        SELECT app_id, ?, COALESCE(platform, ''), COALESCE(version_name, ''), COUNT(*), 0
-        FROM devices
-        WHERE last_seen >= ? AND last_seen < ?
-        GROUP BY app_id, platform, version_name
+        SELECT d.app_id, ?, COALESCE(d.platform, ''), COALESCE(d.version_name, ''), COUNT(*), 0
+        FROM devices d
+        WHERE d.last_seen >= ? AND d.last_seen < ?
+          AND ${countedDeviceSql('d')}
+        GROUP BY d.app_id, d.platform, d.version_name
         ON CONFLICT(app_id, date, platform, version_name) DO NOTHING
     `).run(dateStr, startOfLocalDayIso(dateStr), startOfNextLocalDayIso(dateStr));
 }
@@ -646,8 +787,46 @@ function runMaintenance() {
     return {rolledUp: true, date: yesterday, purged};
 }
 
+function listExclusions(appId) {
+    if (!getProduct(appId)) {
+        return null;
+    }
+    return listExclusionsRows(getDb(), appId);
+}
+
+function addExclusion(appId, kind, value) {
+    const parsed = normalizeExclusion(kind, value);
+    if (parsed.error) {
+        return parsed;
+    }
+    if (!getProduct(appId)) {
+        return null;
+    }
+    getDb().prepare(`
+        INSERT INTO stats_exclusions (app_id, kind, value, created_at)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(app_id, kind, value) DO NOTHING
+    `).run(appId, parsed.kind, parsed.value, nowIso());
+    return {kind: parsed.kind, value: parsed.value, exclusions: listExclusions(appId)};
+}
+
+function removeExclusion(appId, kind, value) {
+    const parsed = normalizeExclusion(kind, value);
+    if (parsed.error) {
+        return parsed;
+    }
+    if (!getProduct(appId)) {
+        return null;
+    }
+    getDb().prepare(
+        'DELETE FROM stats_exclusions WHERE app_id = ? AND kind = ? AND value = ?'
+    ).run(appId, parsed.kind, parsed.value);
+    return {kind: parsed.kind, value: parsed.value, exclusions: listExclusions(appId)};
+}
+
 module.exports = {
     PLATFORMS,
+    EXCLUSION_KINDS,
     getDb,
     getProduct,
     upsertReport,
@@ -656,6 +835,9 @@ module.exports = {
     listDevices,
     getDeviceDaily,
     getTrend,
+    listExclusions,
+    addExclusion,
+    removeExclusion,
     renameProduct,
     deleteProduct,
     rollupYesterday,

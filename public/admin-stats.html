@@ -57,10 +57,13 @@
             </div>
         </div>
         <div class="stats-filters">
-            <input type="search" class="form-control form-control-sm" id="deviceFilter" placeholder="搜索 IP / 机型 / 账号">
-            <select class="form-select form-select-sm" id="versionFilter">
-                <option value="">全部版本</option>
-            </select>
+            <div class="stats-filter-controls">
+                <input type="search" class="form-control form-control-sm" id="deviceFilter" placeholder="搜索 IP / 机型 / 账号">
+                <select class="form-select form-select-sm" id="versionFilter">
+                    <option value="">全部版本</option>
+                </select>
+            </div>
+            <div class="stats-exclude-list" id="excludeList" hidden></div>
         </div>
         <div class="surface user-panel stats-device-panel">
             <div class="table-responsive stats-table-scroll">
@@ -123,6 +126,8 @@
     let versionChart;
     let trendChart;
     let pendingDeletedAppId = '';
+    let currentExclusions = [];
+    let exclusionsExpanded = false;
 
     document.addEventListener('DOMContentLoaded', async function () {
         const user = await requireAdminAuth(['admin', 'user']);
@@ -290,6 +295,7 @@
         currentPlatform = '';
         currentPage = 1;
         selectedDeviceId = '';
+        exclusionsExpanded = false;
         document.getElementById('deviceFilter').value = '';
         document.getElementById('listView').style.display = 'none';
         document.getElementById('detailView').style.display = '';
@@ -319,6 +325,7 @@
             renderPlatformTabs(summary.byPlatform || []);
             fillVersionFilter(summary.byVersion || []);
             renderVersionChart(summary.byVersion || []);
+            renderExclusions(summary.exclusions || []);
             await loadTrend();
             await loadDevices();
         } catch (error) {
@@ -510,6 +517,7 @@
 
         const data = await apiRequest(statsUrl(currentAppId, '/devices', params), {headers: authHeaders()});
         totalDevices = data.total || 0;
+        const excludedCount = data.excludedCount || 0;
         const rows = data.devices || [];
         const body = document.getElementById('deviceTable');
         if (!rows.length) {
@@ -517,16 +525,17 @@
         } else {
             body.innerHTML = rows.map(function (device) {
                 const label = deviceLabel(device);
-                return '<tr class="stats-device-row" data-device-id="' + escapeHtml(device.deviceId) +
+                const excludedClass = device.excluded ? ' is-excluded' : '';
+                return '<tr class="stats-device-row' + excludedClass + '" data-device-id="' + escapeHtml(device.deviceId) +
                     '" data-device-label="' + escapeHtml(label) + '">' +
-                    deviceCell(label) +
+                    excludableCell('ip', device.ip, device.excludedByIp) +
                     deviceCell(PLATFORM_LABELS[device.platform] || device.platform) +
                     deviceCell(device.versionName || '—') +
                     deviceCell(device.osVersion || '—') +
                     deviceCell(device.deviceModel || '—') +
                     deviceCell(formatTime(device.firstSeen)) +
                     deviceCell(formatTime(device.lastSeen)) +
-                    deviceCell(device.account || '—') +
+                    excludableCell('account', device.account, device.excludedByAccount) +
                     '</tr>';
             }).join('');
             body.querySelectorAll('.stats-device-row').forEach(function (row) {
@@ -534,12 +543,27 @@
                     showDeviceTrend(row);
                 });
             });
+            body.querySelectorAll('.stats-exclude-toggle').forEach(function (btn) {
+                btn.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    toggleExclusion(
+                        btn.getAttribute('data-kind'),
+                        btn.getAttribute('data-value'),
+                        btn.classList.contains('is-on')
+                    );
+                });
+            });
             highlightDeviceRow();
         }
 
         const from = totalDevices === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
         const to = Math.min(currentPage * PAGE_SIZE, totalDevices);
-        document.getElementById('pageInfo').textContent = '共 ' + totalDevices + ' 条 · ' + from + '-' + to;
+        let pageText = '共 ' + totalDevices + ' 条 · ' + from + '-' + to;
+        if (excludedCount) {
+            pageText += ' · 已排除 ' + excludedCount;
+        }
+        document.getElementById('pageInfo').textContent = pageText;
         document.getElementById('prevPage').disabled = currentPage <= 1;
         document.getElementById('nextPage').disabled = currentPage * PAGE_SIZE >= totalDevices;
     }
@@ -551,6 +575,107 @@
     function deviceCell(value) {
         const text = value || '—';
         return '<td title="' + escapeHtml(text) + '">' + escapeHtml(text) + '</td>';
+    }
+
+    function exclusionKindLabel(kind) {
+        return kind === 'account' ? '账号' : 'IP';
+    }
+
+    function excludableCell(kind, value, isExcluded) {
+        if (!value) {
+            return deviceCell('—');
+        }
+        const on = isExcluded ? ' is-on' : '';
+        const label = isExcluded ? '已排除' : '排除';
+        const title = isExcluded
+            ? '从排除名单移除'
+            : (kind === 'ip' ? '排除此 IP，不再计入活跃数据' : '排除此账号，不再计入活跃数据');
+        const textClass = isExcluded ? ' stats-cell-text is-excluded-value' : ' stats-cell-text';
+        return (
+            '<td class="stats-excludable" title="' + escapeHtml(value) + '">' +
+            '<div class="stats-cell-main">' +
+            '<span class="' + textClass.trim() + '">' + escapeHtml(value) + '</span>' +
+            '<button type="button" class="stats-exclude-toggle' + on + '" data-kind="' + kind +
+            '" data-value="' + escapeHtml(value) + '" title="' + escapeHtml(title) + '">' +
+            label + '</button>' +
+            '</div></td>'
+        );
+    }
+
+    function exclusionChip(item) {
+        const label = exclusionKindLabel(item.kind) + ' ' + item.value;
+        return (
+            '<button type="button" class="stats-exclude-chip" data-kind="' + escapeHtml(item.kind) +
+            '" data-value="' + escapeHtml(item.value) + '" title="从排除名单移除">' +
+            '<span class="stats-exclude-chip-text">' + escapeHtml(label) + '</span>' +
+            '<span class="stats-exclude-chip-x" aria-hidden="true">×</span></button>'
+        );
+    }
+
+    function renderExclusions(items) {
+        currentExclusions = items || [];
+        const host = document.getElementById('excludeList');
+        if (!host) {
+            return;
+        }
+        if (!currentExclusions.length) {
+            exclusionsExpanded = false;
+            host.innerHTML = '';
+            host.hidden = true;
+            host.classList.remove('is-expanded');
+            return;
+        }
+        host.hidden = false;
+        const canCollapse = currentExclusions.length > 1;
+        const collapsed = canCollapse && !exclusionsExpanded;
+        host.classList.toggle('is-expanded', !collapsed && canCollapse);
+        let html = '<span class="stats-exclude-label">排除名单</span>';
+        if (collapsed) {
+            html += exclusionChip(currentExclusions[0]);
+            html += '<button type="button" class="stats-exclude-more" data-expand="1">and ' +
+                (currentExclusions.length - 1) + ' more</button>';
+        } else {
+            html += currentExclusions.map(exclusionChip).join('');
+            if (canCollapse) {
+                html += '<button type="button" class="stats-exclude-more">收起</button>';
+            }
+        }
+        host.innerHTML = html;
+        host.querySelectorAll('.stats-exclude-chip').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                toggleExclusion(btn.getAttribute('data-kind'), btn.getAttribute('data-value'), true);
+            });
+        });
+        const moreBtn = host.querySelector('.stats-exclude-more');
+        if (moreBtn) {
+            moreBtn.addEventListener('click', function () {
+                exclusionsExpanded = Boolean(moreBtn.getAttribute('data-expand'));
+                renderExclusions(currentExclusions);
+            });
+        }
+    }
+
+    async function toggleExclusion(kind, value, currentlyExcluded) {
+        if (!currentAppId || !kind || !value) {
+            return;
+        }
+        try {
+            if (currentlyExcluded) {
+                await apiRequest(statsUrl(currentAppId, '/exclusions', {kind: kind, value: value}), {
+                    method: 'DELETE',
+                    headers: authHeaders()
+                });
+            } else {
+                await apiRequest(statsUrl(currentAppId, '/exclusions'), {
+                    method: 'POST',
+                    headers: authHeaders({'Content-Type': 'application/json'}),
+                    body: JSON.stringify({kind: kind, value: value})
+                });
+            }
+            await loadDetail();
+        } catch (error) {
+            alert(error.message || (currentlyExcluded ? '取消排除失败' : '加入排除名单失败'));
+        }
     }
 
     function formatTime(value) {

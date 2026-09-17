@@ -20,7 +20,7 @@ Node.js + Express 实现简易测试api
 
 管理页：`/admin/stats`（需 admin 登录）
 
-数据在 `data/app.db`（见下方「数据存储」）。已登录按 `appId + account` 一行，未登录按 `deviceId` 一行。打开次数按自然日写入；心跳（`event=heartbeat`）不计次。
+数据在 `data/app.db`（见下方「数据存储」）。已登录按 `appId + account` 一行，未登录按 `deviceId` 一行。打开次数按自然日写入；心跳（`event=heartbeat`）不计次。明细里可把 IP 或账号加入排除名单，命中后不再计入日活 / 打开次数 / 趋势，列表仍显示。
 
 **客户端接入（Android / Windows 等）见 [docs/client-stats.md](docs/client-stats.md)。** 在其它仓库改客户端时，Cursor 使用个人 skill `client-stats-report`。
 
@@ -31,6 +31,9 @@ Node.js + Express 实现简易测试api
 - `GET /api/stats/:appId/devices` - 明细（`platform` / `version` / `q` / `page` / `pageSize`，`q` 搜 IP / 机型 / 账号 / deviceId）
 - `GET /api/stats/:appId/devices/:deviceId/daily?days=30` - 单设备每日打开次数
 - `GET /api/stats/:appId/trend?days=30` - 日活与打开次数趋势
+- `GET /api/stats/:appId/exclusions` - 排除名单
+- `POST /api/stats/:appId/exclusions` - 加入排除名单 `{ "kind": "ip"|"account", "value": "..." }`
+- `DELETE /api/stats/:appId/exclusions?kind=ip&value=...` - 移出排除名单
 - `PUT /api/stats/:appId` - 修改显示名 `{ "appName": "..." }`
 - `DELETE /api/stats/:appId` - 删除该产品全部统计
 
@@ -44,7 +47,7 @@ Node.js + Express 实现简易测试api
 | `apps`                                              | 应用商店的应用（包名、显示名、logo / banner）                     | `utils/appsDb.js`  |
 | `app_versions`                                      | 每个应用的版本记录，`version_code` 最大者即最新版                 | `utils/appsDb.js`  |
 | `products`                                          | 客户端统计的产品档案，按上报的 appId 自动建档，与 `apps` 互不影响 | `utils/statsDb.js` |
-| `devices` / `daily_stats` / `device_daily` / `meta` | 客户端统计                                                        | `utils/statsDb.js` |
+| `devices` / `daily_stats` / `device_daily` / `stats_exclusions` / `meta` | 客户端统计                                                        | `utils/statsDb.js` |
 
 APK 与图片本体仍是磁盘文件（`public/files/`、`public/app-assets/`），库里只存地址。
 

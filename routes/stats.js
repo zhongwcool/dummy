@@ -149,6 +149,30 @@ function optionalPlatform(value, res) {
     return platform;
 }
 
+function parseExclusionInput(req, res) {
+    const source = req.method === 'DELETE' ? (req.query || {}) : (req.body || {});
+    const kind = clip(source.kind, 16);
+    if (!kind || !statsDb.EXCLUSION_KINDS.includes(kind)) {
+        res.status(400).json({
+            success: false,
+            message: 'kind 必须是 ip 或 account'
+        });
+        return null;
+    }
+    let value = clip(source.value, kind === 'account' ? 128 : 45);
+    if (kind === 'ip' && value) {
+        value = clip(normalizeClientIp(value), 45);
+    }
+    if (!value) {
+        res.status(400).json({
+            success: false,
+            message: kind === 'ip' ? '请提供要排除的 IP' : '请提供要排除的账号'
+        });
+        return null;
+    }
+    return {kind, value};
+}
+
 /**
  * @route   POST /api/stats/report
  * @desc    客户端上报设备最后状态（冷启动计打开次数，心跳只刷新在线）
@@ -364,6 +388,110 @@ router.get('/:appId/devices', verifyToken, checkRole(OPERATOR_ROLES), (req, res)
         res.status(500).json({
             success: false,
             message: '获取设备列表失败'
+        });
+    }
+});
+
+/**
+ * @route   GET /api/stats/:appId/exclusions
+ * @desc    排除名单（IP / 账号不计入活跃与打开次数）
+ * @access  Private (admin, user)
+ */
+router.get('/:appId/exclusions', verifyToken, checkRole(OPERATOR_ROLES), (req, res) => {
+    try {
+        const appId = requireAppId(req, res);
+        if (!appId) {
+            return;
+        }
+        const exclusions = statsDb.listExclusions(appId);
+        if (!exclusions) {
+            return res.status(404).json({
+                success: false,
+                message: '未找到该产品'
+            });
+        }
+        res.json({success: true, exclusions});
+    } catch (error) {
+        console.error('获取排除名单失败:', error);
+        res.status(500).json({
+            success: false,
+            message: '获取排除名单失败'
+        });
+    }
+});
+
+/**
+ * @route   POST /api/stats/:appId/exclusions
+ * @desc    将 IP 或账号加入排除名单
+ * @access  Private (admin, user)
+ */
+router.post('/:appId/exclusions', verifyToken, checkRole(OPERATOR_ROLES), (req, res) => {
+    try {
+        const appId = requireAppId(req, res);
+        if (!appId) {
+            return;
+        }
+        const parsed = parseExclusionInput(req, res);
+        if (!parsed) {
+            return;
+        }
+        const result = statsDb.addExclusion(appId, parsed.kind, parsed.value);
+        if (!result) {
+            return res.status(404).json({
+                success: false,
+                message: '未找到该产品'
+            });
+        }
+        if (result.error) {
+            return res.status(400).json({
+                success: false,
+                message: result.error
+            });
+        }
+        res.json({success: true, ...result});
+    } catch (error) {
+        console.error('添加排除项失败:', error);
+        res.status(500).json({
+            success: false,
+            message: '添加排除项失败'
+        });
+    }
+});
+
+/**
+ * @route   DELETE /api/stats/:appId/exclusions
+ * @desc    从排除名单移除 IP 或账号
+ * @access  Private (admin, user)
+ */
+router.delete('/:appId/exclusions', verifyToken, checkRole(OPERATOR_ROLES), (req, res) => {
+    try {
+        const appId = requireAppId(req, res);
+        if (!appId) {
+            return;
+        }
+        const parsed = parseExclusionInput(req, res);
+        if (!parsed) {
+            return;
+        }
+        const result = statsDb.removeExclusion(appId, parsed.kind, parsed.value);
+        if (!result) {
+            return res.status(404).json({
+                success: false,
+                message: '未找到该产品'
+            });
+        }
+        if (result.error) {
+            return res.status(400).json({
+                success: false,
+                message: result.error
+            });
+        }
+        res.json({success: true, ...result});
+    } catch (error) {
+        console.error('移除排除项失败:', error);
+        res.status(500).json({
+            success: false,
+            message: '移除排除项失败'
         });
     }
 });

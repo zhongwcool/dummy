@@ -180,12 +180,40 @@ function createSchema(conn) {
         );
         CREATE INDEX IF NOT EXISTS idx_device_daily_date ON device_daily(app_id, date);
 
+        CREATE TABLE IF NOT EXISTS stats_exclusions (
+            app_id TEXT NOT NULL,
+            kind TEXT NOT NULL,
+            value TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            PRIMARY KEY (app_id, kind, value)
+        );
+
         CREATE TABLE IF NOT EXISTS meta (
             key TEXT PRIMARY KEY,
             value TEXT
         );
     `);
     ensureColumn(conn, 'daily_stats', 'launches', 'INTEGER NOT NULL DEFAULT 0');
+    migrateStatsExclusions(conn);
+}
+
+/** 早期排除表没有 app_id，按产品重建主键。 */
+function migrateStatsExclusions(conn) {
+    const columns = conn.prepare('PRAGMA table_info(stats_exclusions)').all();
+    if (!columns.length || columns.some((col) => col.name === 'app_id')) {
+        return;
+    }
+    conn.exec(`
+        CREATE TABLE stats_exclusions_new (
+            app_id TEXT NOT NULL,
+            kind TEXT NOT NULL,
+            value TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            PRIMARY KEY (app_id, kind, value)
+        );
+        DROP TABLE stats_exclusions;
+        ALTER TABLE stats_exclusions_new RENAME TO stats_exclusions;
+    `);
 }
 
 /**
